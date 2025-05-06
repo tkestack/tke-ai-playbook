@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Values.jobName }}
+  labels:
+    app: {{ .Values.jobName }}
+spec:
+  template:
+    metadata:
+      name: {{ .Values.jobName }}
+      labels:
+        app: {{ .Values.jobName }}
+    spec:
+      containers:
+      - name: downloader
+        image: tkeai.tencentcloudcr.com/tke-ai-playbook/llm-downloader:v0.0.1
+        env:
+        - name: LLM_MODEL
+          value: {{ .Values.modelName }}
+        - name: USE_MODELSCOPE
+          value: {{ .Values.useModelscope | quote }}
+        command:
+        - bash
+        - -c
+        - |
+          set -ex
+          if [[ "$USE_MODELSCOPE" == "1" ]]; then
+            exec modelscope download --local_dir=/data/$LLM_MODEL --model="$LLM_MODEL"
+          else
+            exec huggingface-cli download --local-dir=/data/$LLM_MODEL $LLM_MODEL
+          fi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ .Values.pvcName }}
+      restartPolicy: OnFailure

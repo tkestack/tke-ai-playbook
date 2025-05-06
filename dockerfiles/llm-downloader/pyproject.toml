@@ -1,0 +1,12 @@
+[project]
+name = "llm-downloader"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "huggingface-hub>=0.30.2",
+    "modelscope>=1.25.0",
+    "numpy>=2.2.5",
+    "typer>=0.15.2",
+]
