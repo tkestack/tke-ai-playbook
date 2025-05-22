@@ -1,0 +1,66 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: face-mosaic-processor-job-
+spec:
+  entrypoint: main
+  serviceAccountName: job-creator
+  arguments:
+    parameters:
+    - name: inference_concurrency
+      value: 8
+    - name: kueue_queue_name
+      value: "gpu-pool"
+    - name: repeat
+      value: "1"
+    - name: kafka_servers
+      value: "10.32.11.8:9092"
+    - name: kafka_sasl_plain_username
+      value: "<username>"
+    - name: kafka_sasl_plain_password
+      value: "<password>"
+    - name: images_topic
+      value: "<image-topic-name>"
+    - name: bboxes_topic
+      value: "<bboxes-topic-name>"
+    - name: kafka_consumer_group_id
+      value: "<kafka-consumer-group-id>"
+    - name: cos_region
+      value: "<region>"
+    - name: cos_bucket
+      value: "<bucket-name>"
+    - name: cos_secret_id
+      value: "<cos-secret-id>"
+    - name: cos_secret_key
+      value: "<cos-secret-key>"
+    - name: draw_type
+      value: "mosaic"
+    - name: vllm_engine_kwargs
+      value: >
+        {
+          "model": "/models/Qwen/Qwen2.5-VL-7B-Instruct-AWQ",
+          "served_model_name": "Qwen/Qwen2.5-VL-7B-Instruct-AWQ",
+          "max_model_len": 8192,
+          "dtype": "half", 
+          "enforce_eager": true
+        }
+  templates:
+  - name: main
+    steps:
+    - - name: main
+        templateRef:
+          name: face-mosaic-processor-job
+          template: main
+    # - - name: read-images
+    #     templateRef:
+    #       name: face-mosaic-processor-job
+    #       template: read-images
+    # - - name: inference
+    #     templateRef:
+    #       name: face-mosaic-processor-job
+    #       template: inference
+    # - - name: write-images
+    #     templateRef:
+    #       name: face-mosaic-processor-job
+    #       template: write-images
+    

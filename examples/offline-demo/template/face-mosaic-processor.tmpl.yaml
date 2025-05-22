@@ -1,0 +1,125 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: face-mosaic-processor
+spec:
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: kafka_servers
+      value: "<kafka-servers>"
+    - name: kafka_sasl_plain_username
+      value: "<username>"
+    - name: kafka_sasl_plain_password
+      value: "<password>"
+    - name: images_topic
+      value: "<image-topic-name>"
+    - name: bboxes_topic
+      value: "<bboxes-topic-name>"
+    - name: kafka_consumer_group_id
+      value: "<kafka-consumer-group-id>"
+    - name: cos_region
+      value: "<cos-region>"
+    - name: cos_bucket
+      value: "<cos-bucket>"
+    - name: cos_secret_id
+      value: "<cos-secret-id>"
+    - name: cos_secret_key
+      value: "<cos-secret-key>"
+    - name: draw_type
+      value: "mosaic"
+    - name: vllm_engine_kwargs
+      value: |
+        {
+          "model": "/models/Qwen/Qwen2.5-VL-7B-Instruct-AWQ",
+          "served_model_name": "Qwen/Qwen2.5-VL-7B-Instruct-AWQ",
+          "max_model_len": 8192,
+          "dtype": "half", 
+          "enforce_eager": true
+        }
+  templates:
+  - name: main
+    steps:
+    - - name: read-images
+        template: read-images
+    - - name: inference
+        template: inference
+    - - name: write-images
+        template: write-images
+  - name: read-images
+    container:
+      image: ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:offline-demo
+      imagePullPolicy: Always
+      command: ["uv", "run", "python", "cos_kafka.py", "produce"]
+      args:
+      - --bootstrap-servers 
+      - "{{ workflow.parameters.kafka_servers }}"
+      - --sasl-plain-username
+      - "{{ workflow.parameters.kafka_sasl_plain_username }}"
+      - --sasl-plain-password
+      - "{{ workflow.parameters.kafka_sasl_plain_password }}"
+      - --topic-name
+      - "{{ workflow.parameters.images_topic }}"
+      - --region
+      - "{{ workflow.parameters.cos_region }}"
+      - --bucket
+      - "{{ workflow.parameters.cos_bucket }}"
+      - --secret-id
+      - "{{ workflow.parameters.cos_secret_id }}"
+      - --secret-key
+      - "{{ workflow.parameters.cos_secret_key }}"
+  - name: inference
+    container:
+      image: ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:offline-demo
+      imagePullPolicy: Always
+      command: ["uv", "run", "python", "cos_kafka.py", "inference"]
+      args:
+      - --bootstrap-servers 
+      - "{{ workflow.parameters.kafka_servers }}"
+      - --sasl-plain-username
+      - "{{ workflow.parameters.kafka_sasl_plain_username }}"
+      - --sasl-plain-password
+      - "{{ workflow.parameters.kafka_sasl_plain_password }}"
+      - --source-topic-name
+      - "{{ workflow.parameters.images_topic }}"
+      - --target-topic-name
+      - "{{ workflow.parameters.bboxes_topic }}"
+      - --consumer-group-id
+      - "{{ workflow.parameters.kafka_consumer_group_id }}"
+      - --vllm-engine-kwargs
+      - "{{ workflow.parameters.vllm_engine_kwargs }}"
+      resources:
+        requests:
+          nvidia.com/gpu: 1
+        limits:
+          nvidia.com/gpu: 1
+      volumeMounts:
+      - name: models
+        mountPath: /models
+  - name: write-images
+    container:
+      image: ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:offline-demo
+      imagePullPolicy: Always
+      command: ["uv", "run", "python", "cos_kafka.py", "draw"]
+      args:
+      - --bootstrap-servers 
+      - "{{ workflow.parameters.kafka_servers }}"
+      - --sasl-plain-username
+      - "{{ workflow.parameters.kafka_sasl_plain_username }}"
+      - --sasl-plain-password
+      - "{{ workflow.parameters.kafka_sasl_plain_password }}"
+      - --topic-name
+      - "{{ workflow.parameters.bboxes_topic }}"
+      - --consumer-group-id
+      - "{{ workflow.parameters.kafka_consumer_group_id }}"
+      - --region
+      - "{{ workflow.parameters.cos_region }}"
+      - --bucket
+      - "{{ workflow.parameters.cos_bucket }}"
+      - --secret-id
+      - "{{ workflow.parameters.cos_secret_id }}"
+      - --secret-key
+      - "{{ workflow.parameters.cos_secret_key }}"
+      - --draw-type
+      - "{{ workflow.parameters.draw_type }}"
+
