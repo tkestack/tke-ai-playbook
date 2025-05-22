@@ -58,7 +58,7 @@ uv run genai-perf profile \
   --max-threads 256 \
   -H 'Authorization: Bearer NOT USED' \
   -H 'Accept: text/event-stream'
-elif [[ "${PERF}" == "evalscope" ]]
+elif [[ "${PERF}" == "evalscope" ]]; then
 echo "the parameter OSL='${OSL}' and ISL='${ISL}' is not used in evalscope."
 uv run evalscope perf \
   --url "http://${HOST}:${PORT}/v1/chat/completions" \

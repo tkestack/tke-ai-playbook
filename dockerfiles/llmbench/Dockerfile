@@ -27,6 +27,7 @@ RUN uv pip install genai-perf
 
 # install sglang
 RUN uv pip install sglang
+RUN uv pip install orjson
 
 
 COPY . /workspace
