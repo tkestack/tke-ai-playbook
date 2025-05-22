@@ -26,9 +26,7 @@ RUN uv pip install vllm
 RUN uv pip install genai-perf
 
 # install sglang
-RUN uv pip install sglang
-RUN uv pip install orjson
-
+RUN uv pip install "sglang[all]>=0.4.6.post4"
 
 COPY . /workspace
 
