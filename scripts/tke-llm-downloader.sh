@@ -97,7 +97,6 @@ Info "Job to download the LLM model has been generated, see below:"
 cat /tmp/tke-ai-playbook/tke-llm-downloader.yaml
 Confirm "Do you want to create the job?(y/n): "
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-  ${KUBE_CMD} delete -f /tmp/tke-ai-playbook/tke-llm-downloader.yaml --ignore-not-found
   ${KUBE_CMD} create -f /tmp/tke-ai-playbook/tke-llm-downloader.yaml
   Success "Job created"
 fi
