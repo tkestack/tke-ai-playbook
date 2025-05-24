@@ -22,16 +22,37 @@ uv run python3 vllm-benchmarks/benchmark_serving.py \
   --max-concurrency ${PARALLEL} \
   --random_input_len ${ISL} \
   --random_output_len ${OSL} \
+  --save-result --result-filename benchmark.json \
+  --percentile-metrics ttft,tpot,itl,e2el \
   --ignore-eos
+
+# generate markdown table for benchmark result
+echo "[tke-llmbench] save table to 'benchmark_result_table.md'"
+eval $(cat benchmark.json | jq -r '
+  . | {output_throughput, total_token_throughput, mean_e2el_ms, mean_ttft_ms, p99_ttft_ms, mean_itl_ms, p99_itl_ms}
+  | to_entries[]
+  | "\(.key)=\(.value | if type == "number" then (. * 100 | round) / 100 else . end)"
+')
+echo "
+# Benchmark Result
+
+| Output Token Throughput (tok/s) | Mean E2E Lantency (ms) | Total Token Throughput (tok/s) | Mean TTFT (ms) | P99 TTFT (ms) | Mean ITL (ms) | P99 ITL (ms) |
+|---------------------------------|------------------------|--------------------------------|----------------|---------------|---------------|--------------|
+| ${output_throughput} | ${mean_e2el_ms} | ${total_token_throughput} | ${mean_ttft_ms} | ${p99_ttft_ms} | ${mean_itl_ms} | ${p99_itl_ms} |
+" > benchmark_result_table.md
+
 elif [[ "${PERF}" == "sglang" ]]; then
-echo "the parameter REQUEST_NUM='${REQUEST_NUM}' is not used in sglang."
-uv run python -m sglang.bench_one_batch_server \
-  --model-path ${MODEL_PATH} \
-  --base-url http://${HOST}:${PORT} \
-  --batch-size ${PARALLEL} \
-  --input-len ${ISL} \
-  --output-len ${OSL} \
-  --skip-warmup
+uv run python -m sglang.bench_serving \
+  --backend sglang \
+  --seed 100 \
+  --model ${MODEL} \
+  --tokenizer ${MODEL_PATH} \
+  --host ${HOST} --port ${PORT}
+  --dataset-name random \
+  --num-prompts ${REQUEST_NUM} \
+  --random-input ${ISL} \
+  --random-output ${OSL} \
+  --max-concurrency ${PARALLEL}
 elif [[ "${PERF}" == "genai-perf" ]]; then
 uv run genai-perf profile \
   --model ${MODEL} \
