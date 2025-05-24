@@ -47,7 +47,7 @@ cat <<EOF > /tmp/tke-ai-playbook/tke-llm-downloader.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: ${JOB_NAME}
+  generateName: ${JOB_NAME}-
   labels:
     app: ${JOB_NAME}
 spec:
@@ -64,7 +64,7 @@ spec:
               topologyKey: kubernetes.io/hostname
               labelSelector:
                 matchExpressions:
-                - key: job-name
+                - key: app
                   operator: In
                   values:
                   - ${JOB_NAME}
@@ -88,13 +88,6 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data
-        resources:
-          requests:
-            cpu: 1
-            memory: 2Gi
-          limits:
-            cpu: 1
-            memory: 2Gi
       volumes:
       - name: data
         persistentVolumeClaim:
