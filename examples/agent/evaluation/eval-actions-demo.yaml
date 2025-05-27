@@ -1,0 +1,48 @@
+name: LLM App Unit Testing
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Poetry
+        run: |
+          curl -SSL https://install.python-poetry.org | python3 -
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Dependencies
+        run: poetry install --no-root
+
+      - name: Set OpenAI API Key
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> $GITHUB_ENV
+
+      - name: Set OpenAI API Base
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_BASE }}
+        run: echo "OPENAI_API_BASE=$OPENAI_API_BASE" >> $GITHUB_ENV
+
+      - name: Set LLM
+        env:
+          OPENAI_API_KEY: ${{ secrets.LLM_ID }}
+        run: echo "LLM_ID=$LLM_ID" >> $GITHUB_ENV
+
+      - name: Login to Confident AI
+        env:
+          CONFIDENT_API_KEY: ${{ secrets.CONFIDENT_API_KEY }}
+        run: poetry run deepeval login --confident-api-key "$CONFIDENT_API_KEY"
+
+      - name: Run DeepEval Test Run
+        run: poetry run deepeval test run test_llm_app.py -i
