@@ -17,10 +17,6 @@ Info "Checking kubernetes cluster connectivity..."
 MustConnectToKubernetesCluster
 Success "Connected to kubernetes cluster"
 
-Info "Checking GPU resources..."
-CheckKubernetesClusterHaveEnoughGPUResources 1 8
-Success "Enough GPU resources found"
-
 Info "Which namespace do you want to deploy?"
 PS3="Please select a namespace(enter number): "
 select namespace in $(kubectl get namespaces -o name | grep -v kube-system | cut -d / -f 2); do
