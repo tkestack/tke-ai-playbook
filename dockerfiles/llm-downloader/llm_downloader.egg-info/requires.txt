@@ -1,4 +1,0 @@
-huggingface-hub>=0.30.2
-modelscope>=1.25.0
-numpy>=2.2.5
-typer>=0.15.2
