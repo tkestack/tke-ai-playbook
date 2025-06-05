@@ -14,7 +14,7 @@ spec:
     - name: repeat
       value: "1"
     - name: kafka_servers
-      value: "10.32.11.8:9092"
+      value: "<kafka-servers-host-port>"
     - name: kafka_sasl_plain_username
       value: "<username>"
     - name: kafka_sasl_plain_password
