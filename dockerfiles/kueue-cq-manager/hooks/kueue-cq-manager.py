@@ -19,7 +19,7 @@ configVersion: v1
 kubernetes:
 - apiVersion: v1
   kind: Node
-  executeHookOnEvent: ["Added", "Deleted"]
+  executeHookOnEvent: ["Added", "Modified", "Deleted"]
 """
 )
 
