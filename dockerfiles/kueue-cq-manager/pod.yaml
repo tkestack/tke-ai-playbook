@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kueue-cq-manager
+  namespace: kueue-system
+spec:
+  containers:
+  - name: kueue-cq-manager
+    image: ccr.ccs.tencentyun.com/tke-ai-playbook/kueue-cq-manager:latest
+    imagePullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi
+  serviceAccountName: kueue-cq-manager
