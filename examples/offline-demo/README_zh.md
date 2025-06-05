@@ -146,3 +146,8 @@ kubeclt create -f workflow/face-mosaic-processor.yaml
 4. 在 Argo UI 查看执行结果。
 
 5. 在 cos 桶的 outpus 路径下查看处理后的图片。
+
+效果展示：
+
+原图片: ![input](./images/input.jpg)
+脱敏后的图片: ![result](./images/result.jpg)
