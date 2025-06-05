@@ -2,6 +2,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
+#     "structlog",
 #     "typer",
 # ]
 # ///
@@ -9,7 +10,9 @@
 
 import typer
 import json
+import structlog
 
+logger = structlog.get_logger()
 app = typer.Typer()
 
 def print_config():
@@ -37,8 +40,10 @@ def main(
         return
 
     param = parse_binding_context_path(binding_context_path)
-    print(param)
+    logger.info(param)
 
 
 if __name__ == "__main__":
+    structlog.configure(processors=[structlog.processors.JSONRenderer()])
+    logger.info("initializd logger")
     app()
