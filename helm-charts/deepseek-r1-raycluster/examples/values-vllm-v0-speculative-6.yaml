@@ -1,0 +1,34 @@
+image: "ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:v0.8.5"
+rayVersion: "2.43.0"
+
+cmd: |
+  VLLM_USE_V1=0 vllm serve /data/deepseek-ai/DeepSeek-R1 \
+    --served-model-name deepseek-ai/DeepSeek-R1 \
+    --block-size 64 \
+    --max-model-len 16384 \
+    --max-num-batched-tokens 16384 \
+    --gpu-memory-utilization 0.95 \
+    --no-enable-prefix-caching \
+    --enable-chunked-prefill \
+    --enforce-eager \
+    -tp 16 \
+    --disable-log-requests \
+    --enable-reasoning \
+    --reasoning-parser deepseek_r1 \
+    --speculative-config '{"num_speculative_tokens":6}'
+
+configs: "<nil>"
+
+graphs: "<nil>"
+  
+rdma:
+  enable: true
+
+
+nats:
+  enable: false
+
+
+etcd:
+  enable: false
+

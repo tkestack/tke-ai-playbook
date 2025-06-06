@@ -1,0 +1,10 @@
+{{- with .Values.configs }}
+apiVersion: v1
+data:
+  configs.yaml: |
+    {{- . | nindent 4 }}
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" $ }}-configs
+  namespace: {{ $.Release.Namespace | quote }}
+{{- end }}

@@ -1,0 +1,331 @@
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: {{ include "helm.fullname" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  rayVersion: {{ .Values.rayVersion }}
+  headGroupSpec:
+    rayStartParams: {}
+    serviceType: ClusterIP
+    template:
+      metadata:
+        annotations:
+          ray.io/overwrite-container-cmd: "true"
+        labels:
+          {{- include "helm.labels" . | nindent 10 }}
+      spec:
+        hostNetwork: true   
+        hostIPC: true       
+        dnsPolicy: ClusterFirstWithHostNet
+        securityContext:     
+          runAsUser: 0
+        affinity: {}
+        containers:
+        - image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          name: ray-head
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              ulimit -n 65536;
+              echo "Starting Ray Head..." &&
+              eval "${KUBERAY_GEN_RAY_START_CMD}" &
+              echo "Waiting for Ray Head to be ready..." &&
+              until curl --max-time 5 --fail http://127.0.0.1:8265 > /dev/null 2>&1; do
+                echo "Ray dashboard not ready yet...";
+                sleep 10;
+              done &&
+              echo "Ray Head is ready!" &&
+              cd /workspace/examples/llm &&
+              dynamo serve graphs.graphs:Frontend -f ./configs/configs.yaml
+          resources:
+            limits:
+              nvidia.com/gpu: "8"
+            requests:
+              nvidia.com/gpu: "8"
+          env:
+          - name: NATS_SERVER
+            value: "{{ include "nats.server" . }}"
+          - name: ETCD_ENDPOINTS
+            value: "{{ include "etcd.endpoints" . }}"
+          - name: NCCL_IB_HCA
+            value: "mlx5"
+          - name: NCCL_SOCKET_IFNAME
+            value: "bond"
+          - name: GLOO_SOCKET_IFNAME
+            value: "eth0"
+          volumeMounts:
+          - mountPath: /tmp/ray
+            name: log-volume
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /data/models
+            name: models
+          - mountPath: /workspace/examples/llm/configs
+            name: configs
+          - mountPath: /workspace/examples/llm/graphs
+            name: graphs
+        imagePullSecrets: []
+        nodeSelector: {}
+        tolerations: []
+        volumes:
+        - emptyDir: {}
+          name: log-volume
+        - emptyDir:
+            medium: Memory
+          name: dshm
+        - configMap:
+            name: {{ include "helm.fullname" . }}-configs
+          name: configs
+        - configMap:
+            name: {{ include "helm.fullname" . }}-graphs
+          name: graphs
+        - name: models
+          {{- .Values.modelVolume | toYaml | nindent 10 }}
+  workerGroupSpecs:
+  - groupName: workergroup
+    maxReplicas: 1
+    minReplicas: 1
+    numOfHosts: 1
+    rayStartParams: {}
+    replicas: 1
+    template:
+      metadata:
+        annotations:
+          ray.io/overwrite-container-cmd: "true"
+        labels:
+          {{- include "helm.labels" . | nindent 10 }}
+      spec:
+        hostNetwork: true   
+        hostIPC: true       
+        dnsPolicy: ClusterFirstWithHostNet
+        securityContext:     
+          runAsUser: 0     
+        affinity: {}
+        containers:
+        - image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          name: ray-worker
+          command: ["/bin/bash", "-c"]
+          args:
+            - >
+              ulimit -n 65536;
+              eval "${KUBERAY_GEN_RAY_START_CMD} --node-ip-address=${MY_POD_IP}" &&
+              tail -f /dev/null
+          resources:
+            limits:
+              nvidia.com/gpu: "8"
+            requests:
+              nvidia.com/gpu: "8"
+          env:
+          - name: NATS_SERVER
+            value: "{{ include "nats.server" . }}"
+          - name: ETCD_ENDPOINTS
+            value: "{{ include "etcd.endpoints" . }}"
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: NCCL_IB_HCA
+            value: "mlx5"
+          - name: NCCL_SOCKET_IFNAME
+            value: "bond"
+          - name: GLOO_SOCKET_IFNAME
+            value: "eth0"
+          volumeMounts:
+          - mountPath: /tmp/ray
+            name: log-volume
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /workspace/examples/llm/configs
+            name: configs
+          - mountPath: /workspace/examples/llm/graphs
+            name: graphs
+          - mountPath: /data/models
+            name: models
+        imagePullSecrets: []
+        nodeSelector: {}
+        tolerations: []
+        volumes:
+        - emptyDir: {}
+          name: log-volume
+        - emptyDir:
+            medium: Memory
+          name: dshm
+        - configMap:
+            name: {{ include "helm.fullname" . }}-configs
+          name: configs
+        - configMap:
+            name: {{ include "helm.fullname" . }}-graphs
+          name: graphs
+        - name: models
+          {{- .Values.modelVolume | toYaml | nindent 10 }}
+{{- if .Values.remotePrefill }}
+---
+apiVersion: ray.io/v1
+kind: RayCluster
+metadata:
+  name: {{ include "helm.fullname" . }}-prefill
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  rayVersion: {{ .Values.rayVersion }}
+  headGroupSpec:
+    rayStartParams: {}
+    serviceType: ClusterIP
+    template:
+      metadata:
+        annotations:
+          ray.io/overwrite-container-cmd: "true"
+        labels:
+          {{- include "helm.labels" . | nindent 10 }}
+      spec:
+        hostNetwork: true   
+        hostIPC: true       
+        dnsPolicy: ClusterFirstWithHostNet
+        securityContext:     
+          runAsUser: 0     
+        affinity: {}
+        containers:
+        - image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          name: ray-head
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              ulimit -n 65536;
+              echo "Starting Ray Head..." &&
+              eval "${KUBERAY_GEN_RAY_START_CMD}" &
+              echo "Waiting for Ray Head to be ready..." &&
+              until curl --max-time 5 --fail http://127.0.0.1:8265 > /dev/null 2>&1; do
+                echo "Ray dashboard not ready yet...";
+                sleep 10;
+              done &&
+              echo "Ray Head is ready!" &&
+              cd /workspace/examples/llm &&
+              dynamo serve components.prefill_worker:PrefillWorker -f ./configs/configs.yaml
+          resources:
+            limits:
+              nvidia.com/gpu: "8"
+            requests:
+              nvidia.com/gpu: "8"
+          env:
+          - name: NATS_SERVER
+            value: "{{ include "nats.server" . }}"
+          - name: ETCD_ENDPOINTS
+            value: "{{ include "etcd.endpoints" . }}"
+          - name: NCCL_IB_HCA
+            value: "mlx5"
+          - name: NCCL_SOCKET_IFNAME
+            value: "bond"
+          - name: GLOO_SOCKET_IFNAME
+            value: "eth0"
+          volumeMounts:
+          - mountPath: /tmp/ray
+            name: log-volume
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /data/models
+            name: models
+          - mountPath: /workspace/examples/llm/configs
+            name: configs
+          - mountPath: /workspace/examples/llm/graphs
+            name: graphs
+        imagePullSecrets: []
+        nodeSelector: {}
+        tolerations: []
+        volumes:
+        - emptyDir: {}
+          name: log-volume
+        - emptyDir:
+            medium: Memory
+          name: dshm
+        - configMap:
+            name: {{ include "helm.fullname" . }}-configs
+          name: configs
+        - configMap:
+            name: {{ include "helm.fullname" . }}-graphs
+          name: graphs
+        - name: models
+          {{- .Values.modelVolume | toYaml | nindent 10 }}
+  workerGroupSpecs:
+  - groupName: workergroup
+    maxReplicas: 1
+    minReplicas: 1
+    numOfHosts: 1
+    rayStartParams: {}
+    replicas: 1
+    template:
+      metadata:
+        annotations:
+          ray.io/overwrite-container-cmd: "true"
+        labels:
+          {{- include "helm.labels" . | nindent 10 }}
+      spec:
+        hostNetwork: true   
+        hostIPC: true       
+        dnsPolicy: ClusterFirstWithHostNet
+        securityContext:     
+          runAsUser: 0     
+        affinity: {}
+        containers:
+        - image: {{ .Values.image }}
+          imagePullPolicy: IfNotPresent
+          name: ray-worker
+          command: ["/bin/bash", "-c"]
+          args:
+            - >
+              ulimit -n 65536;
+              eval "${KUBERAY_GEN_RAY_START_CMD} --node-ip-address=${MY_POD_IP}" &&
+              tail -f /dev/null
+          resources:
+            limits:
+              nvidia.com/gpu: "8"
+            requests:
+              nvidia.com/gpu: "8"
+          env:
+          - name: NATS_SERVER
+            value: "{{ include "nats.server" . }}"
+          - name: ETCD_ENDPOINTS
+            value: "{{ include "etcd.endpoints" . }}"
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: NCCL_IB_HCA
+            value: "mlx5"
+          - name: NCCL_SOCKET_IFNAME
+            value: "bond"
+          - name: GLOO_SOCKET_IFNAME
+            value: "eth0"
+          volumeMounts:
+          - mountPath: /tmp/ray
+            name: log-volume
+          - mountPath: /dev/shm
+            name: dshm
+          - mountPath: /data/models
+            name: models
+          - mountPath: /workspace/examples/llm/configs
+            name: configs
+          - mountPath: /workspace/examples/llm/graphs
+            name: graphs
+        imagePullSecrets: []
+        nodeSelector: {}
+        tolerations: []
+        volumes:
+        - emptyDir: {}
+          name: log-volume
+        - emptyDir:
+            medium: Memory
+          name: dshm
+        - configMap:
+            name: {{ include "helm.fullname" . }}-configs
+          name: configs
+        - configMap:
+            name: {{ include "helm.fullname" . }}-graphs
+          name: graphs
+        - name: models
+          {{- .Values.modelVolume | toYaml | nindent 10 }}
+{{- end }}
