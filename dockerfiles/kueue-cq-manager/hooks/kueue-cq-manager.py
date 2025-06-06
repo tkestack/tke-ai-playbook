@@ -2,7 +2,6 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#     "structlog",
 #     "typer",
 # ]
 # ///
@@ -10,9 +9,7 @@
 
 import typer
 import json
-import structlog
 
-logger = structlog.get_logger()
 app = typer.Typer()
 
 def print_config():
@@ -23,6 +20,7 @@ kubernetes:
 - apiVersion: v1
   kind: Node
   executeHookOnEvent: ["Added", "Modified", "Deleted"]
+  jqFilter: "{ name: .metadata.name, labels: .metadata.labels, capacity: .status.capacity }"
 """
 )
 
@@ -39,11 +37,26 @@ def main(
         print_config()
         return
 
-    param = parse_binding_context_path(binding_context_path)
-    logger.info(param)
-
+    binding_context_content = parse_binding_context_path(binding_context_path)
+    objects = []
+    for content in binding_context_content:
+        if content['type'] == 'Synchronization':
+            for item in content['objects']:
+                objects.append({
+                    'name': item['filterResult']['name'],
+                    'labels': item['filterResult']['labels'],
+                    'capacity': item['filterResult']['capacity']
+                })
+        elif content['type'] == 'Event':
+            objects.append({
+                'name': content['filterResult']['name'],
+                'labels': content['filterResult']['labels'],
+                'capacity': content['filterResult']['capacity']
+            })
+        else:
+            print(f"Unknown binding type '{content['type']}'")
+            return
+    print(objects)
 
 if __name__ == "__main__":
-    structlog.configure(processors=[structlog.processors.JSONRenderer()])
-    logger.info("initializd logger")
     app()
