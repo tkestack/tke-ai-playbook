@@ -30,15 +30,15 @@ configs: |
     ServiceArgs:
       workers: 1
       resources:
-        gpu: 16
-    common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size, max-num-batched-tokens]
+        gpu: '16'
+    common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size]
 
   PrefillWorker:
     enforce-eager: true
     ServiceArgs:
       workers: 1
       resources:
-        gpu: 16
+        gpu: '16'
     common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size, max-num-batched-tokens, enforce-eager]
 
 graphs: |

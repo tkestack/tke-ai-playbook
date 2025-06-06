@@ -25,6 +25,8 @@ spec:
         containers:
         - image: {{ .Values.image }}
           imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
           name: ray-head
           command: ["/bin/bash", "-c"]
           args:
@@ -50,12 +52,34 @@ spec:
             value: "{{ include "nats.server" . }}"
           - name: ETCD_ENDPOINTS
             value: "{{ include "etcd.endpoints" . }}"
-          - name: NCCL_IB_HCA
-            value: "mlx5"
-          - name: NCCL_SOCKET_IFNAME
-            value: "bond"
+          - name: DYN_LOG
+            value: "debug"
+          - name: NCCL_DEBUG
+            value: "INFO"
+          - name: NCCL_IB_GID_INDEX
+            value: "3"
           - name: GLOO_SOCKET_IFNAME
             value: "eth0"
+          - name: NCCL_SOCKET_IFNAME
+            value: "eth0"
+          - name: NCCL_IB_DISABLE
+            value: "0"
+          - name: NCCL_IB_HCA
+            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
+            value: "eth0"
+          - name: NVSHMEM_HCA_LIST
+            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          - name: NVSHMEM_IB_TRAFFIC_CLASS
+            value: "160"
+          - name: NCCL_IB_TC
+            value: "160"
+          # - name: NCCL_IB_HCA
+          #   value: "mlx5"
+          # - name: NCCL_SOCKET_IFNAME
+          #   value: "bond"
+          # - name: GLOO_SOCKET_IFNAME
+          #   value: "eth0"
           volumeMounts:
           - mountPath: /tmp/ray
             name: log-volume
@@ -107,6 +131,8 @@ spec:
         containers:
         - image: {{ .Values.image }}
           imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
           name: ray-worker
           command: ["/bin/bash", "-c"]
           args:
@@ -128,12 +154,34 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
-          - name: NCCL_IB_HCA
-            value: "mlx5"
-          - name: NCCL_SOCKET_IFNAME
-            value: "bond"
+          - name: DYN_LOG
+            value: "debug"
+          - name: NCCL_DEBUG
+            value: "INFO"
+          - name: NCCL_IB_GID_INDEX
+            value: "3"
           - name: GLOO_SOCKET_IFNAME
             value: "eth0"
+          - name: NCCL_SOCKET_IFNAME
+            value: "eth0"
+          - name: NCCL_IB_DISABLE
+            value: "0"
+          - name: NCCL_IB_HCA
+            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
+            value: "eth0"
+          - name: NVSHMEM_HCA_LIST
+            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          - name: NVSHMEM_IB_TRAFFIC_CLASS
+            value: "160"
+          - name: NCCL_IB_TC
+            value: "160"
+          # - name: NCCL_IB_HCA
+          #   value: "mlx5"
+          # - name: NCCL_SOCKET_IFNAME
+          #   value: "bond"
+          # - name: GLOO_SOCKET_IFNAME
+          #   value: "eth0"
           volumeMounts:
           - mountPath: /tmp/ray
             name: log-volume
@@ -191,6 +239,8 @@ spec:
         containers:
         - image: {{ .Values.image }}
           imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
           name: ray-head
           command: ["/bin/bash", "-c"]
           args:
@@ -216,12 +266,34 @@ spec:
             value: "{{ include "nats.server" . }}"
           - name: ETCD_ENDPOINTS
             value: "{{ include "etcd.endpoints" . }}"
-          - name: NCCL_IB_HCA
-            value: "mlx5"
-          - name: NCCL_SOCKET_IFNAME
-            value: "bond"
+          - name: DYN_LOG
+            value: "debug"
+          - name: NCCL_DEBUG
+            value: "INFO"
+          - name: NCCL_IB_GID_INDEX
+            value: "3"
           - name: GLOO_SOCKET_IFNAME
             value: "eth0"
+          - name: NCCL_SOCKET_IFNAME
+            value: "eth0"
+          - name: NCCL_IB_DISABLE
+            value: "0"
+          - name: NCCL_IB_HCA
+            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
+            value: "eth0"
+          - name: NVSHMEM_HCA_LIST
+            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          - name: NVSHMEM_IB_TRAFFIC_CLASS
+            value: "160"
+          - name: NCCL_IB_TC
+            value: "160"
+          # - name: NCCL_IB_HCA
+          #   value: "mlx5"
+          # - name: NCCL_SOCKET_IFNAME
+          #   value: "bond"
+          # - name: GLOO_SOCKET_IFNAME
+          #   value: "eth0"
           volumeMounts:
           - mountPath: /tmp/ray
             name: log-volume
@@ -273,6 +345,8 @@ spec:
         containers:
         - image: {{ .Values.image }}
           imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
           name: ray-worker
           command: ["/bin/bash", "-c"]
           args:
@@ -294,12 +368,34 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
-          - name: NCCL_IB_HCA
-            value: "mlx5"
-          - name: NCCL_SOCKET_IFNAME
-            value: "bond"
+          - name: DYN_LOG
+            value: "debug"
+          - name: NCCL_DEBUG
+            value: "INFO"
+          - name: NCCL_IB_GID_INDEX
+            value: "3"
           - name: GLOO_SOCKET_IFNAME
             value: "eth0"
+          - name: NCCL_SOCKET_IFNAME
+            value: "eth0"
+          - name: NCCL_IB_DISABLE
+            value: "0"
+          - name: NCCL_IB_HCA
+            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
+            value: "eth0"
+          - name: NVSHMEM_HCA_LIST
+            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          - name: NVSHMEM_IB_TRAFFIC_CLASS
+            value: "160"
+          - name: NCCL_IB_TC
+            value: "160"
+          # - name: NCCL_IB_HCA
+          #   value: "mlx5"
+          # - name: NCCL_SOCKET_IFNAME
+          #   value: "bond"
+          # - name: GLOO_SOCKET_IFNAME
+          #   value: "eth0"
           volumeMounts:
           - mountPath: /tmp/ray
             name: log-volume
