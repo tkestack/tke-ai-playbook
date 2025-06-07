@@ -58,28 +58,29 @@ spec:
             value: "INFO"
           - name: NCCL_IB_GID_INDEX
             value: "3"
+          - name: NCCL_IB_HCA
+            value: "mlx5"
+          - name: NCCL_SOCKET_IFNAME
+            value: "bond"
           - name: GLOO_SOCKET_IFNAME
             value: "eth0"
-          - name: NCCL_SOCKET_IFNAME
-            value: "eth0"
-          - name: NCCL_IB_DISABLE
-            value: "0"
-          - name: NCCL_IB_HCA
-            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
-          - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
-            value: "eth0"
-          - name: NVSHMEM_HCA_LIST
-            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
-          - name: NVSHMEM_IB_TRAFFIC_CLASS
-            value: "160"
-          - name: NCCL_IB_TC
-            value: "160"
-          # - name: NCCL_IB_HCA
-          #   value: "mlx5"
-          # - name: NCCL_SOCKET_IFNAME
-          #   value: "bond"
+          # --------------------------
           # - name: GLOO_SOCKET_IFNAME
           #   value: "eth0"
+          # - name: NCCL_SOCKET_IFNAME
+          #   value: "eth0"
+          # - name: NCCL_IB_DISABLE
+          #   value: "0"
+          # - name: NCCL_IB_HCA
+          #   value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          # - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
+          #   value: "eth0"
+          # - name: NVSHMEM_HCA_LIST
+          #   value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          # - name: NVSHMEM_IB_TRAFFIC_CLASS
+          #   value: "160"
+          # - name: NCCL_IB_TC
+          #   value: "160"
           volumeMounts:
           - mountPath: /tmp/ray
             name: log-volume
@@ -160,28 +161,29 @@ spec:
             value: "INFO"
           - name: NCCL_IB_GID_INDEX
             value: "3"
+          - name: NCCL_IB_HCA
+            value: "mlx5"
+          - name: NCCL_SOCKET_IFNAME
+            value: "bond"
           - name: GLOO_SOCKET_IFNAME
             value: "eth0"
-          - name: NCCL_SOCKET_IFNAME
-            value: "eth0"
-          - name: NCCL_IB_DISABLE
-            value: "0"
-          - name: NCCL_IB_HCA
-            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
-          - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
-            value: "eth0"
-          - name: NVSHMEM_HCA_LIST
-            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
-          - name: NVSHMEM_IB_TRAFFIC_CLASS
-            value: "160"
-          - name: NCCL_IB_TC
-            value: "160"
-          # - name: NCCL_IB_HCA
-          #   value: "mlx5"
-          # - name: NCCL_SOCKET_IFNAME
-          #   value: "bond"
+          # ---------------------------
           # - name: GLOO_SOCKET_IFNAME
           #   value: "eth0"
+          # - name: NCCL_SOCKET_IFNAME
+          #   value: "eth0"
+          # - name: NCCL_IB_DISABLE
+          #   value: "0"
+          # - name: NCCL_IB_HCA
+          #   value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          # - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
+          #   value: "eth0"
+          # - name: NVSHMEM_HCA_LIST
+          #   value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          # - name: NVSHMEM_IB_TRAFFIC_CLASS
+          #   value: "160"
+          # - name: NCCL_IB_TC
+          #   value: "160"
           volumeMounts:
           - mountPath: /tmp/ray
             name: log-volume
@@ -272,28 +274,29 @@ spec:
             value: "INFO"
           - name: NCCL_IB_GID_INDEX
             value: "3"
+          - name: NCCL_IB_HCA
+            value: "mlx5"
+          - name: NCCL_SOCKET_IFNAME
+            value: "bond"
           - name: GLOO_SOCKET_IFNAME
             value: "eth0"
-          - name: NCCL_SOCKET_IFNAME
-            value: "eth0"
-          - name: NCCL_IB_DISABLE
-            value: "0"
-          - name: NCCL_IB_HCA
-            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
-          - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
-            value: "eth0"
-          - name: NVSHMEM_HCA_LIST
-            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
-          - name: NVSHMEM_IB_TRAFFIC_CLASS
-            value: "160"
-          - name: NCCL_IB_TC
-            value: "160"
-          # - name: NCCL_IB_HCA
-          #   value: "mlx5"
-          # - name: NCCL_SOCKET_IFNAME
-          #   value: "bond"
+          # ----------------------------
           # - name: GLOO_SOCKET_IFNAME
           #   value: "eth0"
+          # - name: NCCL_SOCKET_IFNAME
+          #   value: "eth0"
+          # - name: NCCL_IB_DISABLE
+          #   value: "0"
+          # - name: NCCL_IB_HCA
+          #   value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          # - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
+          #   value: "eth0"
+          # - name: NVSHMEM_HCA_LIST
+          #   value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          # - name: NVSHMEM_IB_TRAFFIC_CLASS
+          #   value: "160"
+          # - name: NCCL_IB_TC
+          #   value: "160"
           volumeMounts:
           - mountPath: /tmp/ray
             name: log-volume
@@ -374,28 +377,29 @@ spec:
             value: "INFO"
           - name: NCCL_IB_GID_INDEX
             value: "3"
+          - name: NCCL_IB_HCA
+            value: "mlx5"
+          - name: NCCL_SOCKET_IFNAME
+            value: "bond"
           - name: GLOO_SOCKET_IFNAME
             value: "eth0"
-          - name: NCCL_SOCKET_IFNAME
-            value: "eth0"
-          - name: NCCL_IB_DISABLE
-            value: "0"
-          - name: NCCL_IB_HCA
-            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
-          - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
-            value: "eth0"
-          - name: NVSHMEM_HCA_LIST
-            value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
-          - name: NVSHMEM_IB_TRAFFIC_CLASS
-            value: "160"
-          - name: NCCL_IB_TC
-            value: "160"
-          # - name: NCCL_IB_HCA
-          #   value: "mlx5"
-          # - name: NCCL_SOCKET_IFNAME
-          #   value: "bond"
+          # ---------------------------
           # - name: GLOO_SOCKET_IFNAME
           #   value: "eth0"
+          # - name: NCCL_SOCKET_IFNAME
+          #   value: "eth0"
+          # - name: NCCL_IB_DISABLE
+          #   value: "0"
+          # - name: NCCL_IB_HCA
+          #   value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          # - name: NVSHMEM_BOOTSTRAP_UID_SOCK_IFNAME
+          #   value: "eth0"
+          # - name: NVSHMEM_HCA_LIST
+          #   value: "mlx5_bond_0:1,mlx5_bond_1:1,mlx5_bond_2:1,mlx5_bond_3:1,mlx5_bond_4:1,mlx5_bond_5:1,mlx5_bond_6:1,mlx5_bond_7:1"
+          # - name: NVSHMEM_IB_TRAFFIC_CLASS
+          #   value: "160"
+          # - name: NCCL_IB_TC
+          #   value: "160"
           volumeMounts:
           - mountPath: /tmp/ray
             name: log-volume

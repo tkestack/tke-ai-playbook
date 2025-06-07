@@ -1,4 +1,7 @@
+#image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.0-e61f1c8-raycluster"
 image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.0-raycluster"
+# image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.1.1-20250428-ray"
+# deocde: 94 -> 71, prefill: 203 -> 183
 rayVersion: "2.46.0"
 
 modelVolume:
