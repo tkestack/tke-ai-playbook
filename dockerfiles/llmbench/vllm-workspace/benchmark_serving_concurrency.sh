@@ -4,8 +4,8 @@ HOST=${HOST:-"localhost"}
 PORT=${PORT:-"8000"}
 MODEL=${MODEL:-"deepseek-ai/DeepSeek-R1"}
 TOKENIZER=${TOKENIZER:-"/workspace/tokenizer/${MODEL}"}
-ISL="${ISL:-"1000"}"
-OSL="${OSL:-"1000"}"
+ISL=${ISL:-"1000"}
+OSL=${OSL:-"1000"}
 OUTPUT_RESULT_FILE=${OUTPUT_RESULT_FILE:-"benchmark_result_${ISL}_${OSL}.md"}
 
 BENCH_LOOP=${BENCH_LOOP:-"1"}

@@ -12,10 +12,13 @@ for i in "${!isl_list[@]}"; do
     ISL=${isl_list[$i]}
     OSL=${osl_list[$i]}
     echo "======================================================"
-    echo "   Running benchmark with ISL:OSL=${ISL}:${OSL}...    "
+    echo "   Running benchmark with 'ISL:OSL=${ISL}:${OSL}'     "
+    echo "   OpenAI Server 'http://${HOST}:${PORT}'             "
+    echo "   Model '${MODEL}'                                   "
+    echo "   Tokenizer '${TOKENIZER}'                           "
     echo "======================================================"
 
-    bash benchmark_serving_concurrency.sh
+    ISL=${ISL} OSL=${OSL} bash benchmark_serving_concurrency.sh
 
     echo ""
     echo ""
