@@ -1,0 +1,12 @@
+{{- if .Values.dynamo.enable }}
+{{- with .Values.graphs }}
+apiVersion: v1
+data:
+  graphs.py: |
+    {{- . | nindent 4 }}
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" $ }}-graphs
+  namespace: {{ $.Release.Namespace | quote }}
+{{- end }}
+{{- end }}
