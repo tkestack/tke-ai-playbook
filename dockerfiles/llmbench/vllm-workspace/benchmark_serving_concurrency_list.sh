@@ -32,8 +32,6 @@ print_help() {
 
 # Function to parse command line arguments
 get_options() {
-  local is_set_output_result_file=""
-
   while [[ $# -gt 0 ]]; do
     case $1 in
       --host)
