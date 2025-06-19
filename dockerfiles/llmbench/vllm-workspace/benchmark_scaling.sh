@@ -104,7 +104,7 @@ run_benchmark() {
     --random_input_len ${ISL} \
     --random_output_len ${OSL} \
     --max-concurrency ${concurrency} \
-    --num-prompts ${concurrency} \
+    --num-prompts $((${concurrency} * 10)) \
     --save-result --result-filename ${result_file} \
     --percentile-metrics ttft,tpot,itl,e2el \
     --ignore-eos
