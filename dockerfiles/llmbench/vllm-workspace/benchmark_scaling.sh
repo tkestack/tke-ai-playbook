@@ -10,6 +10,7 @@ MODEL="deepseek-ai/DeepSeek-R1"
 TOKENIZER="/workspace/tokenizer/${MODEL}"
 ISL="1000"
 OSL="1000"
+MAX_CONCURRENCY_LOOP=3
 
 # Function to print help message
 print_help() {
@@ -18,6 +19,7 @@ print_help() {
   echo "Options:"
   echo "  --initial-concurrency <int>    Initial concurrency level (default: ${INITIAL_CONCURRENCY})"
   echo "  --max-concurrency <int>        Maximum concurrency level (default: ${MAX_CONCURRENCY})"
+  echo "  --max-concurrency-loop <int>   Number of times to repeat max concurrency (default: ${MAX_CONCURRENCY_LOOP})"
   echo "  --interval <int>               Interval in seconds between concurrency increases (default: ${INTERVAL_SECONDS})"
   echo "  --host <host>                  Target host for inference requests (default: ${HOST})"
   echo "  --port <port>                  Target port for inference requests (default: ${PORT})"
@@ -136,11 +138,30 @@ main() {
     run_benchmark ${current_concurrency}
     current_concurrency=$((current_concurrency * 2))
     if [[ ${current_concurrency} -gt ${MAX_CONCURRENCY} ]]; then
-      current_concurrency=${MAX_CONCURRENCY}
+      break
     fi
     log "Waiting for ${INTERVAL_SECONDS} seconds before next run (with concurrency: ${current_concurrency})"
     sleep ${INTERVAL_SECONDS}
   done
+
+  log "Max concurrency reached, running ${MAX_CONCURRENCY_LOOP} loops."
+  for i in $(seq 1 ${MAX_CONCURRENCY_LOOP}); do 
+    run_benchmark ${MAX_CONCURRENCY}
+    log "Waiting for ${INTERVAL_SECONDS} seconds before next run (with concurrency: ${MAX_CONCURRENCY})"
+    sleep ${INTERVAL_SECONDS}
+  done
+
+  while true; do
+    current_concurrency=$((current_concurrency / 2))
+    run_benchmark ${current_concurrency}
+    if [[ ${current_concurrency} -lt ${INITIAL_CONCURRENCY} ]]; then
+      break
+    fi
+    log "Waiting for ${INTERVAL_SECONDS} seconds before next run (with concurrency: ${current_concurrency})"
+    sleep ${INTERVAL_SECONDS}
+  done
+
+  log "Benchmark completed."
 }
 
 # Execute the main function
