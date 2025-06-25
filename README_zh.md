@@ -66,5 +66,9 @@ API_ENDPOINT=http://localhost:8080 bash scripts/test-openai-api.sh
 2. 使用方法：
 
 ```bash
-LLM_MODEL=<model-id> PVC_NAME=<your-pvc> bash scripts/tke-llm-downloader.sh 
+# Download 'deepseek-ai/DeepSeek-R1' model to PVC 'ai-model' with 6 concurrency
+bash scripts/tke-llm-downloader.sh --pvc ai-model --completions 6 --parallelism 6 --model deepseek-ai/DeepSeek-R1
+
+# Download 'Qwen/Qwen3-32B' model to PVC 'ai-model' with 3 concurrency
+bash scripts/tke-llm-downloader.sh --pvc ai-model --completions 3 --parallelism 3 --model Qwen/Qwen3-32B
 ```
