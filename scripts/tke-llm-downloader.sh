@@ -29,7 +29,7 @@ search_model_on_modelscope() {
   curl -s 'https://modelscope.cn/api/v1/dolphin/models' \
     -X 'PUT' \
     -H 'Content-Type: application/json' \
-    --data-raw '{"PageSize":5,"PageNumber":1,"SortBy":"Default","Target":"","SingleCriterion":[],"Name":"'$1'","Criterion":[]}' | \
+    --data-raw '{"PageSize":10,"PageNumber":1,"SortBy":"Default","Target":"","SingleCriterion":[],"Name":"'$1'","Criterion":[]}' | \
   jq -r '.Data.Model.Models[] | .Path + "/" + .Name'
 }
 
