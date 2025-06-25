@@ -55,7 +55,7 @@ spec:
             - name: NCCL_IB_HCA
               value: "mlx5"
             - name: NCCL_SOCKET_IFNAME
-              value: "bond"
+              value: "eth0"
             - name: GLOO_SOCKET_IFNAME
               value: "eth0"
             {{- if .Values.dynamo.debug }}
@@ -119,7 +119,7 @@ spec:
             - name: NCCL_IB_HCA
               value: "mlx5"
             - name: NCCL_SOCKET_IFNAME
-              value: "bond"
+              value: "eth0"
             - name: GLOO_SOCKET_IFNAME
               value: "eth0"
             {{- if .Values.dynamo.debug }}
