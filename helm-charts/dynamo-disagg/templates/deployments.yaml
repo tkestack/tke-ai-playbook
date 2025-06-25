@@ -4,6 +4,10 @@ apiVersion: v1
 data:
   configs.yaml: |
 {{ .configs | nindent 4 }}
+{{- range .additionalConfigs }}
+{{- .name | nindent 2 }}: |
+{{- .content | nindent 4 }}
+{{- end }}
 kind: ConfigMap
 metadata:
   name: {{ include "helm.fullname" $ }}-{{ .name }}-configs
@@ -31,6 +35,8 @@ metadata:
     component: {{ .name }}
 spec:
   replicas: {{ .replicas }}
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "helm.selectorLabels" $ | nindent 6 }}
@@ -55,7 +61,10 @@ spec:
         command: ["bash", "-c"]
         args:
         - |
-          cd /workspace/examples/llm && dynamo serve graphs.graphs:{{ .component }} -f ./configs/configs.yaml
+          echo "
+          cd {{ .workspace }} && dynamo serve graphs.graphs:{{ .component }} -f ./configs/configs.yaml
+          " > entrypoint.sh
+          tail -f /dev/null
         resources:
           {{ toYaml .resources | nindent 10 }}
         env:
@@ -70,10 +79,16 @@ spec:
         - name: NCCL_IB_HCA
           value: "mlx5"
         - name: NCCL_SOCKET_IFNAME
-          value: "bond"
+          value: "eth0"
         - name: GLOO_SOCKET_IFNAME
           value: "eth0"
+        - name: UCX_TLS
+          value: "cuda,rc,tcp,sm"
         {{- if .debug }}
+        - name: UCX_LOG_LEVEL
+          value: "debug"
+        - name: UCX_PROTO_INFO
+          value: "y"
         - name: DYN_LOG
           value: "debug"
         - name: NCCL_DEBUG
@@ -85,9 +100,9 @@ spec:
         - name: models
           mountPath: /data/models
         - name: configs
-          mountPath: /workspace/examples/llm/configs
+          mountPath: {{ .workspace }}/configs
         - name: graphs
-          mountPath: /workspace/examples/llm/graphs
+          mountPath: {{ .workspace }}/graphs
       volumes:
       - name: dshm
         emptyDir:

@@ -1,5 +1,5 @@
 llmbench:
-  enable: true
+  enable: false
   service: mixed
   model: Qwen/Qwen3-32B
 
@@ -18,6 +18,7 @@ deployments:
     enable: true
     port: 8000
   component: "Frontend"
+  workspace: /workspace/examples/llm
   graphs: |
     from components.frontend import Frontend
     from components.processor import Processor
@@ -60,6 +61,7 @@ deployments:
         resources:
           gpu: '4'
       common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size, max-num-batched-tokens, enforce-eager]
+  additionalConfigs: []
 
 - name: prefillworker
   image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.0-lws-pr1333"
@@ -74,6 +76,7 @@ deployments:
   service:
     enable: false
   component: "PrefillWorker"
+  workspace: /workspace/examples/llm
   graphs: |
     from components.prefill_worker import PrefillWorker
   configs: |
@@ -92,6 +95,7 @@ deployments:
         resources:
           gpu: '4'
       common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size, max-num-batched-tokens, enforce-eager]
+  additionalConfigs: []
 
 modelVolume:
   hostPath:

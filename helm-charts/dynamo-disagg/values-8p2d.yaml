@@ -18,6 +18,7 @@ deployments:
     enable: true
     port: 8000
   component: "Frontend"
+  workspace: /workspace/examples/llm
   graphs: |
     from components.frontend import Frontend
     from components.processor import Processor
@@ -65,6 +66,7 @@ deployments:
   service:
     enable: false
   component: "PrefillWorker"
+  workspace: /workspace/examples/llm
   graphs: |
     from components.prefill_worker import PrefillWorker
   configs: |

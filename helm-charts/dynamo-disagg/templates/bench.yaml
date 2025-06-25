@@ -17,10 +17,10 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
         - |
-          until curl -sf http://${HOST}:8000/health; do sleep 10; done;
-          sleep 60;
+          echo "
           bash bench.sh
           ISL=2500 OSL=100 bash benchmark_serving_concurrency.sh
+          " > entrypoint.sh
           tail -f /dev/null
         env:
         - name: HOST
