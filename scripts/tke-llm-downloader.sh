@@ -187,7 +187,7 @@ Info "Job to download the LLM model has been generated, see below:"
 cat ${TEMP_DIR}/tke-llm-downloader.yaml
 Confirm "Do you want to create the job?(y/n): "
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-  ${KUBE_CMD} create -f /tmp/tke-ai-playbook/tke-llm-downloader.yaml
+  ${KUBE_CMD} create -f ${TEMP_DIR}/tke-llm-downloader.yaml
   Success "Job created"
   indent="          "
   Info "Note: following commands can be used to check the logs of the job"
