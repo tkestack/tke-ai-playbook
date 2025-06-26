@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: crane-scheduler-controller-monitor
+  namespace: kube-system
+  labels:
+    release: prometheus
+    app.kubernetes.io/name: crane-scheduler-controller-monitor
+    tke.ai.playbook/app-name: crane-scheduler-controller-monitor
+spec:
+  podTargetLabels:
+    - app
+  selector:
+    matchLabels:
+      app: crane-scheduler-controller
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  endpoints:
+    - port: metrics-http
+      interval: 5s
+      path: /metrics

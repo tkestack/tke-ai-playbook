@@ -1,0 +1,31 @@
+apiVersion: scheduling.crane.io/v1alpha1
+kind: PlacementPolicy
+metadata:
+  name: qwen-hpa-demo-compact-scheduling
+spec:
+  targets:
+    podSelectors:
+    - matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+        - qwen-hpa-demo
+  nodeGroups:
+    - name: native-nodes-compact
+      nodeType: native
+      nodeResourceFitStrategy:
+        type: MostAllocated
+        resources:
+        - name: nvidia.com/gpu
+          weight: 1
+      whenUnsatisfiable: ScheduleAnyway
+      priority: 100
+    - name: general-nodes-compact
+      nodeType: general
+      nodeResourceFitStrategy:
+        type: MostAllocated
+        resources:
+          - name: nvidia.com/gpu
+            weight: 1
+      whenUnsatisfiable: ScheduleAnyway
+      priority: 100
