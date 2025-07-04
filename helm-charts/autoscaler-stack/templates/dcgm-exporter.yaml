@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace | quote }}
+  name: tke-ai-dcgm-exporter-dashboard
+  labels:
+    app: {{ .Release.Name }}-grafana
+    dashboard: dcgm-exporter-dashboard
+data:
+  dcgm-exporter-dashboard.json: |-
+    {{ .Files.Get "dashboards/dcgm-exporter-dashboard.json" | nindent 4 }}

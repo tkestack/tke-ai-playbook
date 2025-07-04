@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace | quote }}
+  name: tke-ai-crane-dashboard
+  labels:
+    app: {{ .Release.Name }}-grafana
+    dashboard: crane-dashboard
+data:
+  crane-dashboard.json: |-
+    {{ .Files.Get "dashboards/crane-dashboard.json" | nindent 4 }}
