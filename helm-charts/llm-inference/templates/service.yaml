@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}
+    tke.ai.playbook/app-name: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ .Release.Name }}
+    tke.ai/name: {{ .Release.Name }}
+  ports:
+  - name: api
+    protocol: TCP
+    port: {{ .Values.service.exposePort }}
+    targetPort: {{ .Values.service.serverPort }}
+  - name: metrics
+    protocol: TCP
+    port: {{ .Values.service.serverPort }}
+    targetPort: {{ .Values.service.serverPort }}

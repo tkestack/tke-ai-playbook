@@ -1,0 +1,21 @@
+apiVersion: v2
+name: ai-autoscaler-stack
+description: A Helm chart for managing LWS, Prometheus, Grafana, and other components
+version: 1.0.0
+
+dependencies:
+  - name: argo-workflows
+    version: "0.45.8"
+    repository: "file://./charts/argo-workflows"
+  - name: lws
+    version: "0.1.0"
+    repository: "file://./charts/lws"
+  - name: prometheus-adapter
+    version: "4.14.1"
+    repository: "file://./charts/prometheus-adapter"
+  - name: dcgm-exporter
+    version: "4.1.1"
+    repository: "file://./charts/dcgm-exporter"
+  - name: keda
+    version: "0.45.8"
+    repository: "file://./charts/keda"

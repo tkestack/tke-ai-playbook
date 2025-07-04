@@ -1,0 +1,25 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}
+    tke.ai/name: {{ .Release.Name }}
+spec:
+  maxReplicas: {{ $.Values.autoscaling.replicas.maximum | default 2 }}
+  minReplicas: {{ $.Values.autoscaling.replicas.minimum | default 1 }}
+  metrics:
+  - type: Pods
+    pods:
+      metric:
+        name: {{ $.Values.autoscaling.metric.name }}
+      target:
+        type: AverageValue
+        averageValue: {{ $.Values.autoscaling.metric.value }}
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Release.Name }}
+{{- end }}

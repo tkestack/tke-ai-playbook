@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace | quote }}
+  name: tke-ai-hpa-dashboard
+  labels:
+    app: {{ .Release.Name }}-grafana
+    dashboard: hpa-dashboard
+data:
+  hpa-dashboard.json: |-
+    {{ .Files.Get "dashboards/hpa-dashboard.json" | nindent 4 }}

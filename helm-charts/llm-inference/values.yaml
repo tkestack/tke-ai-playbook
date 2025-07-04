@@ -1,0 +1,70 @@
+# 容器镜像
+image: "ccr.ccs.tencentyun.com/halewang/vllm:v0.8.5.r1-qwen-1.5b"
+# 镜像拉取策略
+imagePullPolicy: IfNotPresent
+
+# 副本数
+replicas: 1
+
+service:
+  # 容器端口
+  serverPort: 30000
+  # 服务端口
+  exposePort: 80
+
+command: 
+  - /bin/bash
+  - -c
+  - |
+    set -e
+    vllm serve /data/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B" \
+      --trust-remote-code \
+      --served-model-name deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \
+      --gpu-memory-utilization 0.8 \
+      --disable-log-requests \
+      --max-num-seqs 1024 \
+      --host 0.0.0.0 \
+      --port 30000
+resources:
+  requests:
+    nvidia.com/gpu: "1"
+  limits:
+    nvidia.com/gpu: "1"
+affinity: {}
+
+# 环境变量. 如果已经在启动脚本中指定，则这里可以不设置。如脚本中未指定，则可以在这里指定。
+env: 
+  - name: MODEL_NAME
+    value: "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B"
+  - name: GLOO_SOCKET_IFNAME
+    value: "eth0"
+  - name: NCCL_SOCKET_IFNAME
+    value: "eth0"
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 30000
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+lifecycle:
+  preStop:
+    exec:
+      command: ["/bin/sh", "-c", "sleep 10"]
+
+volumes: {}
+
+volumeMounts: {}
+
+autoscaling: 
+  enabled: false
+  replicas: 
+    maximum: 2
+    minimum: 1
+  metric: 
+    name: vllm:gpu_cache_usage_perc
+    value: 0.3

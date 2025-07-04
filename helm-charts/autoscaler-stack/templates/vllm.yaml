@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ .Release.Namespace | quote }}
+  name: tke-ai-vllm-dashboard
+  labels:
+    app: {{ .Release.Name }}-grafana
+    dashboard: vllm-dashboard
+data:
+  vllm-dashboard.json: |-
+    {{ .Files.Get "dashboards/vllm-dashboard.json" | nindent 4 }}
