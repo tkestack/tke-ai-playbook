@@ -1,0 +1,133 @@
+{{- if .Values.vllm.enable }}
+apiVersion: leaderworkerset.x-k8s.io/v1
+kind: LeaderWorkerSet
+metadata:
+  name: {{ include "helm.fullname" . }}-vllm
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.vllm.replicas }}
+  leaderWorkerTemplate:
+    size: 2
+    restartPolicy: RecreateGroupOnPodRestart
+    leaderTemplate:
+      metadata:
+        labels:
+          {{- include "helm.labels" . | nindent 10 }}
+          component: vllm
+          role: leader
+      spec:
+        hostNetwork: true
+        hostIPC: true
+        dnsPolicy: ClusterFirstWithHostNet
+        securityContext:
+          runAsUser: 0
+        containers:
+          - name: leader
+            image: {{ .Values.vllm.image }}
+            imagePullPolicy: Always
+            securityContext:
+              privileged: true
+            command: ["sh", "-c"]
+            args: 
+            - |
+              bash /vllm-workspace/examples/online_serving/multi-node-serving.sh leader --ray_cluster_size=$(LWS_GROUP_SIZE);
+              {{- .Values.vllm.cmd | indent 14 }}
+            resources:
+              limits:
+                nvidia.com/gpu: "8"
+              requests:
+                nvidia.com/gpu: "8"
+            ports:
+            - containerPort: 6379
+              name: ray
+            - containerPort: 8000
+              name: http
+            env:
+            - name: VLLM_WORKER_MULTIPROC_METHOD
+              value: "spawn"
+            - name: NCCL_IB_GID_INDEX
+              value: "3"
+            - name: NCCL_IB_HCA
+              value: "mlx5"
+            - name: NCCL_SOCKET_IFNAME
+              value: "eth0"
+            - name: GLOO_SOCKET_IFNAME
+              value: "eth0"
+            volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              - mountPath: /data/models
+                name: models
+        volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 15Gi
+        - name: models
+          {{- .Values.modelVolume | toYaml | nindent 10 }}
+    workerTemplate:
+      spec:
+        hostNetwork: true
+        hostIPC: true
+        dnsPolicy: ClusterFirstWithHostNet
+        securityContext:
+          runAsUser: 0
+        containers:
+          - name: worker
+            image: {{ .Values.vllm.image }}
+            imagePullPolicy: Always
+            securityContext:
+              privileged: true
+            command: ["sh", "-c"]
+            args: 
+            - "bash /vllm-workspace/examples/online_serving/multi-node-serving.sh worker --ray_address=$(LWS_LEADER_ADDRESS)"
+            resources:
+              limits:
+                nvidia.com/gpu: "8"
+              requests:
+                nvidia.com/gpu: "8"
+            env:
+            - name: VLLM_WORKER_MULTIPROC_METHOD
+              value: "spawn"
+            - name: NCCL_IB_GID_INDEX
+              value: "3"
+            - name: NCCL_IB_HCA
+              value: "mlx5"
+            - name: NCCL_SOCKET_IFNAME
+              value: "eth0"
+            - name: GLOO_SOCKET_IFNAME
+              value: "eth0"
+            volumeMounts:
+              - mountPath: /dev/shm
+                name: dshm
+              - mountPath: /data/models
+                name: models
+        volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 15Gi
+        - name: models
+          {{- .Values.modelVolume | toYaml | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.fullname" . }}
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    component: vllm
+    role: leader
+spec:
+  ports:
+  - name: http
+    port: 8000
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+    component: vllm
+    role: leader
+  type: ClusterIP
+{{- end }}

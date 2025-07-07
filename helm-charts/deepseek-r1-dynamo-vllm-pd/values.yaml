@@ -1,0 +1,96 @@
+dynamo:
+  enable: true
+  image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.0-lws-pr1333"
+  debug: false
+  vllmWokrer:
+    enable: true
+    replicas: 1
+  prefillWorker:
+    enable: true
+    replicas: 1
+
+modelVolume:
+  hostPath:
+    path: /data0
+
+configs: |
+  Common:
+    model: /data/models/deepseek-ai/DeepSeek-R1
+    block-size: 128
+    max-model-len: 4096
+    kv-transfer-config: '{"kv_connector":"DynamoNixlConnector"}'
+    tensor-parallel-size: 16
+    max-num-batched-tokens: 4096
+
+  Frontend:
+    served_model_name: deepseek-ai/DeepSeek-R1
+    endpoint: dynamo.Processor.chat/completions
+    port: 8000
+
+  Processor:
+    router: round-robin
+    common-configs: [model, block-size]
+
+  VllmWorker:
+    remote-prefill: true
+    conditional-disagg: false
+    compilation-config: '{"cudagraph_capture_sizes": [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256]}'
+    enable-reasoning: true
+    reasoning-parser: deepseek_r1
+    ServiceArgs:
+      workers: 1
+      resources:
+        gpu: '16'
+    common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size]
+
+  PrefillWorker:
+    enforce-eager: true
+    ServiceArgs:
+      workers: 1
+      resources:
+        gpu: '16'
+    common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size, max-num-batched-tokens, enforce-eager]
+
+graphs: |
+  from components.frontend import Frontend
+  from components.processor import Processor
+  from components.worker import VllmWorker
+
+  Frontend.link(Processor).link(VllmWorker)
+
+
+nats:
+  enable: true
+  config:
+    jetstream:
+      enabled: true
+      fileStore:
+        enabled: true
+        dir: /data
+        pvc:
+          enabled: true
+          size: 10Gi
+
+etcd:
+  enable: true
+  replicaCount: 1
+  # Explicitly remove authentication
+  auth:
+    rbac:
+      create: false
+
+  readinessProbe:
+    enabled: false
+
+  livenessProbe:
+    enabled: false
+
+  persistence:
+    size: 20Gi
+    resources:
+    requests:
+      cpu: 10
+      memory: 20Gi
+    limits:
+      cpu: 10
+      memory: 20Gi
