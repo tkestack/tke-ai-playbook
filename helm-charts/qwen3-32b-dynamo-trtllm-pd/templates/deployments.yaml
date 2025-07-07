@@ -58,13 +58,12 @@ spec:
         imagePullPolicy: {{ .imagePullPolicy }}
         securityContext:
           privileged: true
+          capabilities:
+            add: ["IPC_LOCK"]
         command: ["bash", "-c"]
         args:
         - |
-          echo "
           cd {{ .workspace }} && dynamo serve graphs.graphs:{{ .component }} -f ./configs/configs.yaml
-          " > entrypoint.sh
-          tail -f /dev/null
         resources:
           {{ toYaml .resources | nindent 10 }}
         env:
@@ -82,13 +81,7 @@ spec:
           value: "eth0"
         - name: GLOO_SOCKET_IFNAME
           value: "eth0"
-        - name: UCX_TLS
-          value: "cuda,rc,tcp,sm"
         {{- if .debug }}
-        - name: UCX_LOG_LEVEL
-          value: "debug"
-        - name: UCX_PROTO_INFO
-          value: "y"
         - name: DYN_LOG
           value: "debug"
         - name: NCCL_DEBUG

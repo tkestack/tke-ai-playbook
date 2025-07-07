@@ -1,22 +1,3 @@
-vllm:
-  enable: false
-  replicas: 1
-  image: "ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:v0.9.0.1"
-  cmd: |
-    vllm serve /data/models/deepseek-ai/DeepSeek-R1 \
-      --served-model-name deepseek-ai/DeepSeek-R1 \
-      --block-size 64 \
-      --max-model-len 16384 \
-      --max-num-batched-tokens 16384 \
-      --gpu-memory-utilization 0.95 \
-      --no-enable-prefix-caching \
-      --enable-chunked-prefill \
-      --compilation-config '{"cudagraph_capture_sizes": [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 144, 152, 160, 168, 176, 184, 192, 200, 208, 216, 224, 232, 240, 248, 256]}'
-      -tp 16 \
-      --disable-log-requests \
-      --enable-reasoning \
-      --reasoning-parser deepseek_r1
-
 dynamo:
   enable: true
   image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.0-lws-pr1333"

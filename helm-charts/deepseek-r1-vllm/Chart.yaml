@@ -1,5 +1,5 @@
 apiVersion: v2
-name: helm
+name: deepseek-r1-vllm
 description: A Helm chart for Kubernetes
 
 # A chart can be either an 'application' or a 'library' chart.
@@ -22,13 +22,3 @@ version: 0.1.0
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
 appVersion: "1.16.0"
-
-dependencies:
-- name: etcd
-  condition: etcd.enable
-  version: "~11.2.1"
-  repository: https://charts.bitnami.com/bitnami
-- name: nats
-  condition: nats.enable
-  version: "~1.3.1"
-  repository: https://nats-io.github.io/k8s/helm/charts/

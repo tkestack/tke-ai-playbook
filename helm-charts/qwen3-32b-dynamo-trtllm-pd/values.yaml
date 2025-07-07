@@ -1,8 +1,3 @@
-llmbench:
-  enable: true
-  service: mixed
-  model: Qwen/Qwen3-32B
-
 deployments:
 - name: mixed 
   image: "tkeai.tencentcloudcr.com/tke-ai-playbook/dynamo:nightly-trtllm"
@@ -36,8 +31,8 @@ deployments:
     TensorRTLLMWorker:
       served_model_name: /data/models/Qwen/Qwen3-32B
       block-size: 128
-      engine_args: "configs/llm_api_config.yaml"
-      llmapi-disaggregated-config: "configs/single_node_config.yaml"
+      engine_args: "configs/base.yaml"
+      llmapi-disaggregated-config: "configs/disagg.yaml"
       router: round-robin
       remote-prefill: true
       min-prefill-workers: 1
@@ -49,15 +44,15 @@ deployments:
     TensorRTLLMPrefillWorker:
       served_model_name: /data/models/Qwen/Qwen3-32B
       block-size: 128
-      engine_args: "configs/llm_api_config.yaml"
-      llmapi-disaggregated-config: "configs/single_node_config.yaml"
+      engine_args: "configs/base.yaml"
+      llmapi-disaggregated-config: "configs/disagg.yaml"
       router: round-robin
       ServiceArgs:
         workers: 1
         resources:
           gpu: 4
   additionalConfigs:
-  - name: llm_api_config.yaml
+  - name: base.yaml
     content: |
       backend: pytorch
       model_name: "/data/models/Qwen/Qwen3-32B"
@@ -70,7 +65,7 @@ deployments:
       disable_overlap_scheduler: true
       use_cuda_graph: false
       print_iter_log: true
-  - name: single_node_config.yaml
+  - name: disagg.yaml
     content: |
       backend: pytorch
       context_servers:
@@ -110,8 +105,8 @@ deployments:
     TensorRTLLMWorker:
       served_model_name: /data/models/Qwen/Qwen3-32B
       block-size: 128
-      engine_args: "configs/llm_api_config.yaml"
-      llmapi-disaggregated-config: "configs/single_node_config.yaml"
+      engine_args: "configs/base.yaml"
+      llmapi-disaggregated-config: "configs/disagg.yaml"
       router: round-robin
       remote-prefill: true
       min-prefill-workers: 1
@@ -120,7 +115,7 @@ deployments:
         resources:
           gpu: 4
   additionalConfigs:
-  - name: llm_api_config.yaml
+  - name: base.yaml
     content: |
       backend: pytorch
       model_name: "/data/models/Qwen/Qwen3-32B"
@@ -133,7 +128,7 @@ deployments:
       disable_overlap_scheduler: true
       use_cuda_graph: false
       print_iter_log: true
-  - name: single_node_config.yaml
+  - name: disagg.yaml
     content: |
       backend: pytorch
       context_servers:

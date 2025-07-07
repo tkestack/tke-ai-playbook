@@ -1,12 +1,12 @@
-{{- if .Values.vllm.enable }}
+{{- if and .Values.dynamo.enable .Values.dynamo.prefillWorker.enable }}
 apiVersion: leaderworkerset.x-k8s.io/v1
 kind: LeaderWorkerSet
 metadata:
-  name: {{ include "helm.fullname" . }}-vllm
+  name: {{ include "helm.fullname" . }}-prefillworker
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.vllm.replicas }}
+  replicas: {{ .Values.dynamo.prefillWorker.replicas }}
   leaderWorkerTemplate:
     size: 2
     restartPolicy: RecreateGroupOnPodRestart
@@ -14,7 +14,7 @@ spec:
       metadata:
         labels:
           {{- include "helm.labels" . | nindent 10 }}
-          component: vllm
+          component: prefillworker
           role: leader
       spec:
         hostNetwork: true
@@ -24,15 +24,15 @@ spec:
           runAsUser: 0
         containers:
           - name: leader
-            image: {{ .Values.vllm.image }}
+            image: {{ .Values.dynamo.image }}
             imagePullPolicy: Always
             securityContext:
               privileged: true
             command: ["sh", "-c"]
             args: 
             - |
-              bash /vllm-workspace/examples/online_serving/multi-node-serving.sh leader --ray_cluster_size=$(LWS_GROUP_SIZE);
-              {{- .Values.vllm.cmd | indent 14 }}
+              bash /workspace/multi-node-serving.sh leader --ray_cluster_size=$(LWS_GROUP_SIZE);
+              cd /workspace/examples/llm && dynamo serve components.prefill_worker:PrefillWorker -f ./configs/configs.yaml
             resources:
               limits:
                 nvidia.com/gpu: "8"
@@ -41,22 +41,34 @@ spec:
             ports:
             - containerPort: 6379
               name: ray
-            - containerPort: 8000
-              name: http
             env:
             - name: VLLM_WORKER_MULTIPROC_METHOD
               value: "spawn"
+            - name: NATS_SERVER
+              value: "{{ include "nats.server" . }}"
+            - name: ETCD_ENDPOINTS
+              value: "{{ include "etcd.endpoints" . }}"
             - name: NCCL_IB_GID_INDEX
               value: "3"
             - name: NCCL_IB_HCA
               value: "mlx5"
             - name: NCCL_SOCKET_IFNAME
-              value: "bond"
+              value: "eth0"
             - name: GLOO_SOCKET_IFNAME
               value: "eth0"
+            {{- if .Values.dynamo.debug }}
+            - name: DYN_LOG
+              value: "debug"
+            - name: NCCL_DEBUG
+              value: "INFO"
+            {{- end }}
             volumeMounts:
               - mountPath: /dev/shm
                 name: dshm
+              - mountPath: /workspace/examples/llm/configs
+                name: configs
+              - mountPath: /workspace/examples/llm/graphs
+                name: graphs
               - mountPath: /data/models
                 name: models
         volumes:
@@ -64,6 +76,12 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 15Gi
+        - name: configs
+          configMap:
+            name: {{ include "helm.fullname" . }}-configs
+        - name: graphs
+          configMap:
+            name: {{ include "helm.fullname" . }}-graphs
         - name: models
           {{- .Values.modelVolume | toYaml | nindent 10 }}
     workerTemplate:
@@ -75,13 +93,13 @@ spec:
           runAsUser: 0
         containers:
           - name: worker
-            image: {{ .Values.vllm.image }}
+            image: {{ .Values.dynamo.image }}
             imagePullPolicy: Always
             securityContext:
               privileged: true
             command: ["sh", "-c"]
             args: 
-            - "bash /vllm-workspace/examples/online_serving/multi-node-serving.sh worker --ray_address=$(LWS_LEADER_ADDRESS)"
+            - "bash /workspace/multi-node-serving.sh worker --ray_address=$(LWS_LEADER_ADDRESS)"
             resources:
               limits:
                 nvidia.com/gpu: "8"
@@ -90,17 +108,31 @@ spec:
             env:
             - name: VLLM_WORKER_MULTIPROC_METHOD
               value: "spawn"
+            - name: NATS_SERVER
+              value: "{{ include "nats.server" . }}"
+            - name: ETCD_ENDPOINTS
+              value: "{{ include "etcd.endpoints" . }}"
             - name: NCCL_IB_GID_INDEX
               value: "3"
             - name: NCCL_IB_HCA
               value: "mlx5"
             - name: NCCL_SOCKET_IFNAME
-              value: "bond"
+              value: "eth0"
             - name: GLOO_SOCKET_IFNAME
               value: "eth0"
+            {{- if .Values.dynamo.debug }}
+            - name: DYN_LOG
+              value: "debug"
+            - name: NCCL_DEBUG
+              value: "INFO"
+            {{- end }}
             volumeMounts:
               - mountPath: /dev/shm
                 name: dshm
+              - mountPath: /workspace/examples/llm/configs
+                name: configs
+              - mountPath: /workspace/examples/llm/graphs
+                name: graphs
               - mountPath: /data/models
                 name: models
         volumes:
@@ -108,26 +140,12 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 15Gi
+        - name: configs
+          configMap:
+            name: {{ include "helm.fullname" . }}-configs
+        - name: graphs
+          configMap:
+            name: {{ include "helm.fullname" . }}-graphs
         - name: models
           {{- .Values.modelVolume | toYaml | nindent 10 }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "helm.fullname" . }}
-  labels:
-    {{- include "helm.labels" . | nindent 4 }}
-    component: vllm
-    role: leader
-spec:
-  ports:
-  - name: http
-    port: 8000
-    protocol: TCP
-    targetPort: 8000
-  selector:
-    {{- include "helm.selectorLabels" . | nindent 4 }}
-    component: vllm
-    role: leader
-  type: ClusterIP
 {{- end }}
