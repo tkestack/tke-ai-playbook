@@ -1,0 +1,49 @@
+prometheus:
+  enabled: true
+  server:
+    enabled: true
+    service:
+      type: LoadBalancer
+    persistentVolume:
+      enabled: true
+      size: "10Gi"
+  alertmanager:
+    enabled: false
+  kube-state-metrics:
+    enabled: false
+  prometheus-node-exporter:
+    enabled: false
+
+grafana:
+  enabled: true
+  service:
+    enabled: true
+    type: LoadBalancer
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://{{ include "helm.fullname" . }}-prometheus-server.{{ .Release.Namespace }}.svc.cluster.local
+          access: proxy
+          isDefault: true
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+    dashboards:
+      default:
+        dcgm-exporter:
+          file: dashboards/dcgm-exporter-dashboard.json
+
+dcgm-exporter:
+  enabled: true
