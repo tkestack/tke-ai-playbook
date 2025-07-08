@@ -1,29 +1,31 @@
-vllm:
-  enable: true
+modelVolume:
+  hostPath:
+    path: /data0/Qwen/Qwen3-32B
+
+server:
   replicas: 1
   image: "ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:v0.9.0.1"
   imagePullPolicy: IfNotPresent
-  cmd: |
-    vllm serve /data/models/Qwen/Qwen3-32B \
-      --served-model-name Qwen/Qwen3-32B \
-      --block-size 128 \
-      --max-model-len 16384 \
-      --max-num-batched-tokens 16384 \
-      --enable-chunked-prefill \
-      -tp 4 \
-      --disable-log-requests \
-      -O '{"cudagraph_capture_sizes": [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]}'
   resources:
     requests:
       nvidia.com/gpu: 4
     limits:
       nvidia.com/gpu: 4
+  args:
+    served_model_name: Qwen/Qwen3-32B
+    tp_size: 4
+    pp_size: 1
+    dp_size: 1
+    enable_expert_parallel: false
+    max_model_len: 16384
+    enforce_eager: false
+    cuda_graph_sizes: [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]
+  extraArgs: []
+  # - --enable-chunked-prefill
+  env: []
+  # - name: AAAA
+  #   value: BBBB
   service:
     enable: true
     type: ClusterIP
     port: 8000
-    targetPort: 8000
-
-modelVolume:
-  hostPath:
-    path: /data0
