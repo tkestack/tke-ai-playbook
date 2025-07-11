@@ -21,10 +21,9 @@ server:
     tpSize: 8
     ppSize: 1
     epEnabled: false
-  extraArgs:
-  - --max_seq_len 32768
-  - --max_num_tokens 32768
-  - --max_batch_size 128
+    maxModelLen: 32768
+    maxBatchSize: 128
+  extraArgs: []
   extraLLMAPIConfig:
     use_cuda_graph: true
     cuda_graph_padding_enabled: true
