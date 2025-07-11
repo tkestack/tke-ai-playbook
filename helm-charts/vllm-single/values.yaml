@@ -1,0 +1,36 @@
+model:
+  name: "Qwen/Qwen3-32B"
+  pvc:
+    enabled: false
+    name: "ai-model"
+    path: "Qwen/Qwen3-32B"
+  local:
+    enabled: true
+    path: "/data0/Qwen/Qwen3-32B"
+
+server:
+  replicas: 1
+  image: "ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:v0.9.0.1"
+  imagePullPolicy: IfNotPresent
+  resources:
+    requests:
+      nvidia.com/gpu: 4
+    limits:
+      nvidia.com/gpu: 4
+  args:
+    tpSize: 4
+    ppSize: 1
+    epEnabled: false
+    maxModelLen: 32768
+    maxBatchSize: 128
+  extraArgs:
+  - --disable-log-requests
+  - --cuda-graph-sizes 1 2 4 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128
+  env:
+  - name: VLLM_WORKER_MULTIPROC_METHOD
+    value: "spawn"
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 60000
+
