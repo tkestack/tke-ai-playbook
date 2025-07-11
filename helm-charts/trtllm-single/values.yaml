@@ -10,7 +10,7 @@ model:
 
 server:
   replicas: 1
-  image: "nvcr.io/nvidia/tensorrt-llm/release:1.0.0rc1"
+  image: "ccr.ccs.tencentyun.com/tke-ai-playbook/tensorrt-llm:1.0.0rc1"
   imagePullPolicy: IfNotPresent
   resources:
     requests:
