@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" . }}-extra-llm-api-config
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+data:
+  extra-llm-api-config.yml: |
+{{- toYaml .Values.server.extraLLMAPIConfig | nindent 4 }}

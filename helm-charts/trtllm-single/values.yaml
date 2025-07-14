@@ -1,0 +1,36 @@
+model:
+  name: "deepseek-ai/DeepSeek-V3-0324"
+  pvc:
+    enabled: false
+    name: "ai-model"
+    path: "deepseek-ai/DeepSeek-V3-0324"
+  local:
+    enabled: true
+    path: "/data0/deepseek-ai/DeepSeek-V3-0324-W4AFP8"
+
+server:
+  replicas: 1
+  image: "ccr.ccs.tencentyun.com/tke-ai-playbook/tensorrt-llm:1.0.0rc1"
+  imagePullPolicy: IfNotPresent
+  resources:
+    requests:
+      nvidia.com/gpu: 8
+    limits:
+      nvidia.com/gpu: 8
+  args:
+    tpSize: 8
+    ppSize: 1
+    epEnabled: false
+    maxModelLen: 32768
+    maxBatchSize: 128
+  extraArgs: []
+  extraLLMAPIConfig:
+    use_cuda_graph: true
+    cuda_graph_padding_enabled: true
+    cuda_graph_batch_sizes: [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]
+  env: []
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 60000
+

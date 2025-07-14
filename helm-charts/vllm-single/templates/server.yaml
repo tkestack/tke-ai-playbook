@@ -1,0 +1,117 @@
+{{- with .Values.server }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.fullname" $ }}
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" $ | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "helm.selectorLabels" $ | nindent 8 }}
+    spec:
+      enableServiceLinks: false
+      containers:
+      - name: server
+        image: {{ .image }}
+        imagePullPolicy: {{ .imagePullPolicy }}
+        command: ["bash", "-c"]
+        args:
+        - |
+          vllm serve /data/model \
+            --served-model-name {{ $.Values.model.name }} \
+            -tp {{ .args.tpSize }} \
+            -pp {{ .args.ppSize }} \
+            {{- if .args.maxModelLen }}
+            --max-model-len {{ .args.maxModelLen }} \
+            {{- end }}
+            {{- if .args.maxBatchSize }}
+            --max-num-seqs {{ .args.maxBatchSize }} \
+            {{- end }}
+            {{- if .args.epEnabled }}
+            --enable-expert-parallel \
+            {{- end }}
+            {{- range .extraArgs }}
+            {{ . }} \
+            {{- end }}
+            --host 0.0.0.0 \
+            --port 60000
+        resources:
+          {{- toYaml .resources | nindent 10 }}
+        {{- if $.Values.server.env }}
+        env:
+        {{- toYaml $.Values.server.env | nindent 8 }}
+        {{- end }}
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 60000
+            scheme: HTTP
+          timeoutSeconds: 3
+          periodSeconds: 10
+          failureThreshold: 360
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 60000
+            scheme: HTTP
+          timeoutSeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 60000
+            scheme: HTTP
+          timeoutSeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+        volumeMounts:
+        - name: dshm
+          mountPath: /dev/shm
+        {{- if $.Values.model.pvc.enabled }}
+        - name: model
+          mountPath: /data/model
+          subPath: {{ $.Values.model.pvc.path }}
+        {{- else if $.Values.model.local.enabled }}
+        - name: model
+          mountPath: /data/model
+        {{- end }}
+      volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 15Gi
+      {{- if $.Values.model.pvc.enabled }}
+      - name: model
+        persistentVolumeClaim:
+          claimName: {{ $.Values.model.pvc.name }}
+      {{- else if $.Values.model.local.enabled }}
+      - name: model
+        hostPath:
+           path: {{ $.Values.model.local.path }}
+      {{- end }}
+{{- if .service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.fullname" $ }}
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+spec:
+  ports:
+  - name: http
+    port: {{ .service.port }}
+    protocol: TCP
+    targetPort: 60000
+  selector:
+    {{- include "helm.selectorLabels" $ | nindent 4 }}
+  type: {{ .service.type }}
+{{- end }}
+{{- end }}
