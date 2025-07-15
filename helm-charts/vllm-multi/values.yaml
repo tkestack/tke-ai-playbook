@@ -1,12 +1,12 @@
 model:
-  name: "deepseek-r1"
+  name: "deepseek-ai/DeepSeek-V3-0324"
   pvc:
     enabled: false
     name: "ai-model"
     path: "deepseek-ai/DeepSeek-R1"
   local:
     enabled: true
-    path: "/data0/deepseek-ai/DeepSeek-R1"
+    path: "/data0/deepseek-ai/DeepSeek-V3-0324"
 
 server:
   replicas: 1
@@ -42,4 +42,3 @@ server:
     enabled: true
     type: ClusterIP
     port: 60000
-
