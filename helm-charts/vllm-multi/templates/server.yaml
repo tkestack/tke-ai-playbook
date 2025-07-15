@@ -170,7 +170,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "helm.fullname" $ }}
+  name: {{ include "helm.fullname" $ }}-server
   labels:
     {{- include "helm.labels" $ | nindent 4 }}
     role: leader
