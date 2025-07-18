@@ -21,6 +21,7 @@ print_help() {
   echo "  --parallelism <int>            Job parallelism (default: 1)"
   echo "  --use-modelscope <0|1>         Use ModelScope for download (default: 1)"
   echo "  --job-name <name>              Job name prefix (default: tke-llm-downloader)"
+  echo "  --node-selector <key=value>    Node selector for pods (default: "")"
   echo "  -h, --help                     Show this help message and exit"
   exit 0
 }
@@ -65,6 +66,10 @@ get_options() {
         JOB_NAME="$2"
         shift 2
         ;;
+      --node-selector)
+        NODE_SELECTOR="$2"
+        shift 2
+        ;;
       -h|--help)
         print_help
         exit 1
@@ -85,6 +90,7 @@ JOB_COMPLETION_TOTAL=${JOB_COMPLETION_TOTAL:-1}
 JOB_PARALLELISM=${JOB_PARALLELISM:-1}
 USE_MODELSCOPE=${USE_MODELSCOPE:-"1"}
 JOB_NAME=${JOB_NAME:-"tke-llm-downloader"}
+NODE_SELECTOR=${NODE_SELECTOR:-""}
 
 # Parse command line arguments
 get_options "$@"
@@ -132,6 +138,78 @@ ${KUBE_CMD} get pvc ${PVC_NAME} > /dev/null 2>&1 || Fatal "PVC ${PVC_NAME} not f
 Success "PVC '${PVC_NAME}' found"
 
 TEMP_DIR=$(mktemp -d)
+if [ ! -z "${NODE_SELECTOR}" ]; then
+# split NODE_SELECTOR into key-value pairs
+IFS=',' read -ra NODE_SELECTOR_PAIRS <<< "${NODE_SELECTOR}"
+
+# generate nodeSelector section
+NODE_SELECTOR_SECTION=""
+
+for PAIR in "${NODE_SELECTOR_PAIRS[@]}"; do
+  IFS='=' read -ra KEY_VALUE <<< "${PAIR}"
+  NODE_SELECTOR_SECTION="${NODE_SELECTOR_SECTION}
+              - key: ${KEY_VALUE[0]}
+                operator: In
+                values:
+                - ${KEY_VALUE[1]}"
+done
+
+  # generate job yaml
+cat <<EOF > ${TEMP_DIR}/tke-llm-downloader.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: ${JOB_NAME}-
+  labels:
+    app: ${JOB_NAME}
+spec:
+  completions: ${JOB_COMPLETION_TOTAL}
+  parallelism: ${JOB_PARALLELISM}
+  completionMode: Indexed
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:${NODE_SELECTOR_SECTION}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              topologyKey: kubernetes.io/hostname
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - ${JOB_NAME}
+      restartPolicy: Never
+      containers:
+      - name: downloader
+        image: tkeai.tencentcloudcr.com/tke-ai-playbook/llm-downloader:nightly
+        env:
+        - name: JOB_COMPLETION_TOTAL
+          value: "${JOB_COMPLETION_TOTAL}"
+        - name: USE_MODELSCOPE
+          value: "${USE_MODELSCOPE}"
+        command: ["bash", "-lc"]
+        args: 
+        - |
+          if [[ "\${USE_MODELSCOPE}" == "1" ]]; then
+            uv run python download.py modelscope --model-id=${LLM_MODEL} --local-dir=/data/${LLM_MODEL}
+          else
+            uv run python download.py huggingface --model-id=${LLM_MODEL} --local-dir=/data/${LLM_MODEL}
+          fi
+        volumeMounts:
+        - name: data
+          mountPath: /data
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: ${PVC_NAME}
+EOF
+else
 cat <<EOF > ${TEMP_DIR}/tke-llm-downloader.yaml
 apiVersion: batch/v1
 kind: Job
@@ -182,6 +260,7 @@ spec:
         persistentVolumeClaim:
           claimName: ${PVC_NAME}
 EOF
+fi
 
 Info "Job to download the LLM model has been generated, see below:"
 cat ${TEMP_DIR}/tke-llm-downloader.yaml
