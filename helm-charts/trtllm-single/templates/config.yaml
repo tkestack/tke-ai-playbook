@@ -6,4 +6,5 @@ metadata:
     {{- include "helm.labels" . | nindent 4 }}
 data:
   extra-llm-api-config.yml: |
-{{- toYaml .Values.server.extraLLMAPIConfig | nindent 4 }}
+    {{- toYaml .Values.server.extraLLMAPIConfig | nindent 4 }}
+

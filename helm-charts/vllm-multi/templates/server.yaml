@@ -1,0 +1,188 @@
+{{- with .Values.server }}
+apiVersion: leaderworkerset.x-k8s.io/v1
+kind: LeaderWorkerSet
+metadata:
+  name: {{ include "helm.fullname" $ }}
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+spec:
+  replicas: {{ .replicas }}
+  leaderWorkerTemplate:
+    size: {{ .lwsGroupSize }}
+    restartPolicy: RecreateGroupOnPodRestart
+    leaderTemplate:
+      metadata:
+        labels:
+          {{- include "helm.labels" $ | nindent 10 }}
+          role: leader
+      spec:
+        {{- if .hostNetwork.enabled }}
+        hostNetwork: true
+        hostIPC: true
+        dnsPolicy: ClusterFirstWithHostNet
+        securityContext:
+          runAsUser: 0
+        {{- end }}
+        containers:
+        - name: leader
+          image: {{ .image }}
+          imagePullPolicy: {{ .imagePullPolicy }}
+          {{- if .hostNetwork.enabled }}
+          securityContext:
+            privileged: true
+          {{- end }}
+          command: ["bash", "-c"]
+          args:
+          - |
+            bash /vllm-workspace/examples/online_serving/multi-node-serving.sh leader --ray_cluster_size=$(LWS_GROUP_SIZE);
+            vllm serve /data/model \
+              --served-model-name {{ $.Values.model.name }} \
+              -tp {{ .args.tpSize }} \
+              -pp {{ .args.ppSize }} \
+              {{- if .args.maxModelLen }}
+              --max-model-len {{ .args.maxModelLen }} \
+              {{- end }}
+              {{- if .args.maxBatchSize }}
+              --max-num-seqs {{ .args.maxBatchSize }} \
+              {{- end }}
+              {{- if .args.epEnabled }}
+              --enable-expert-parallel \
+              {{- end }}
+              {{- range .extraArgs }}
+              {{ . }} \
+              {{- end }}
+              --host 0.0.0.0 \
+              --port 60000
+          ports:
+          - containerPort: 6379
+            name: ray
+          - containerPort: 60000
+            name: vllm
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          {{- if $.Values.server.env }}
+          env:
+          {{- toYaml $.Values.server.env | nindent 10 }}
+          {{- end }}
+          startupProbe:
+            httpGet:
+              path: /health
+              port: vllm
+              scheme: HTTP
+            timeoutSeconds: 3
+            periodSeconds: 10
+            failureThreshold: 360
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: vllm
+              scheme: HTTP
+            timeoutSeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: vllm
+              scheme: HTTP
+            timeoutSeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          volumeMounts:
+          - name: dshm
+            mountPath: /dev/shm
+          {{- if $.Values.model.pvc.enabled }}
+          - name: model
+            mountPath: /data/model
+            subPath: {{ $.Values.model.pvc.path }}
+          {{- else if $.Values.model.local.enabled }}
+          - name: model
+            mountPath: /data/model
+          {{- end }}
+        volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 15Gi
+        {{- if $.Values.model.pvc.enabled }}
+        - name: model
+          persistentVolumeClaim:
+            claimName: {{ $.Values.model.pvc.name }}
+        {{- else if $.Values.model.local.enabled }}
+        - name: model
+          hostPath:
+            path: {{ $.Values.model.local.path }}
+        {{- end }}
+    workerTemplate:
+      spec:
+        {{- if .hostNetwork.enabled }}
+        hostNetwork: true
+        hostIPC: true
+        dnsPolicy: ClusterFirstWithHostNet
+        securityContext:
+          runAsUser: 0
+        {{- end }}
+        containers:
+        - name: worker
+          image: {{ .image }}
+          imagePullPolicy: {{ .imagePullPolicy }}
+          {{- if .hostNetwork.enabled }}
+          securityContext:
+            privileged: true
+          {{- end }}
+          command: ["bash", "-c"]
+          args:
+          - |
+            bash /vllm-workspace/examples/online_serving/multi-node-serving.sh worker --ray_address=$(LWS_LEADER_ADDRESS)
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          {{- if $.Values.server.env }}
+          env:
+          {{- toYaml $.Values.server.env | nindent 10 }}
+          {{- end }}
+          volumeMounts:
+          - name: dshm
+            mountPath: /dev/shm
+          {{- if $.Values.model.pvc.enabled }}
+          - name: model
+            mountPath: /data/model
+            subPath: {{ $.Values.model.pvc.path }}
+          {{- else if $.Values.model.local.enabled }}
+          - name: model
+            mountPath: /data/model
+          {{- end }}
+        volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 15Gi
+        {{- if $.Values.model.pvc.enabled }}
+        - name: model
+          persistentVolumeClaim:
+            claimName: {{ $.Values.model.pvc.name }}
+        {{- else if $.Values.model.local.enabled }}
+        - name: model
+          hostPath:
+            path: {{ $.Values.model.local.path }}
+        {{- end }}
+{{- if .service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.fullname" $ }}-server
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    role: leader
+spec:
+  ports:
+  - name: http
+    port: {{ .service.port }}
+    protocol: TCP
+    targetPort: vllm
+  selector:
+    {{- include "helm.selectorLabels" $ | nindent 4 }}
+    role: leader
+  type: {{ .service.type }}
+{{- end }}
+{{- end }}

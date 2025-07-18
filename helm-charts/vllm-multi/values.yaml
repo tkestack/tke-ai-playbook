@@ -1,0 +1,44 @@
+model:
+  name: "deepseek-ai/DeepSeek-V3-0324"
+  pvc:
+    enabled: false
+    name: "ai-model"
+    path: "deepseek-ai/DeepSeek-R1"
+  local:
+    enabled: true
+    path: "/data0/deepseek-ai/DeepSeek-V3-0324"
+
+server:
+  replicas: 1
+  lwsGroupSize: 2
+  image: "ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:v0.9.0.1"
+  imagePullPolicy: IfNotPresent
+  resources:
+    requests:
+      nvidia.com/gpu: 8
+    limits:
+      nvidia.com/gpu: 8
+  args:
+    tpSize: 16
+    ppSize: 1
+    epEnabled: false
+    maxModelLen: 32768
+    maxBatchSize: 128
+  extraArgs:
+  - --disable-log-requests
+  - --cuda-graph-sizes 1 2 4 8 16 24 32 40 48 56 64 72 80 88 96 104 112 120 128
+  hostNetwork:
+    enabled: true
+  env:
+  - name: VLLM_WORKER_MULTIPROC_METHOD
+    value: "spawn"
+  - name: NCCL_IB_GID_INDEX
+    value: "3"
+  - name: NCCL_SOCKET_IFNAME
+    value: "eth0"
+  - name: GLOO_SOCKET_IFNAME
+    value: "eth0"
+  service:
+    enabled: true
+    type: ClusterIP
+    port: 60000

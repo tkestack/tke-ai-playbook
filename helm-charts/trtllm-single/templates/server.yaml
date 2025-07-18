@@ -34,6 +34,7 @@ spec:
             --pp_size {{ .args.ppSize }} \
             {{- if .args.maxModelLen }}
             --max_seq_len {{ .args.maxModelLen }} \
+            --max_num_tokens {{ .args.maxModelLen }} \
             {{- end }}
             {{- if .args.maxBatchSize }}
             --max_batch_size {{ .args.maxBatchSize }} \
