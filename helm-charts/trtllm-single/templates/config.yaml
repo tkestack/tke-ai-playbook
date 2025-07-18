@@ -7,3 +7,4 @@ metadata:
 data:
   extra-llm-api-config.yml: |
     {{- toYaml .Values.server.extraLLMAPIConfig | nindent 4 }}
+
