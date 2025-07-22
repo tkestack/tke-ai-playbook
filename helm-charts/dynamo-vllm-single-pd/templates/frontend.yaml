@@ -1,0 +1,115 @@
+{{- with .Values.server.frontend }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.fullname" $ }}-frontend
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    component: frontend
+spec:
+  replicas: {{ .replicas }}
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" $ | nindent 6 }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "helm.selectorLabels" $ | nindent 8 }}
+        component: frontend
+    spec:
+      enableServiceLinks: false
+      containers:
+      - name: server
+        image: {{ .image }}
+        imagePullPolicy: {{ .imagePullPolicy }}
+        command: ["bash", "-c"]
+        args:
+        - |
+          cd /workspace/examples/llm;
+          echo "
+          from components.frontend import Frontend
+          from components.processor import Processor
+          Frontend.link(Processor)
+          " > graphs/graph.py;
+          dynamo serve graphs.graph:Frontend -f ./configs/config.yaml;
+        resources:
+          {{- toYaml .resources | nindent 10 }}
+        env:
+        - name: NATS_SERVER
+          value: "{{ include "nats.server" $ }}"
+        - name: ETCD_ENDPOINTS
+          value: "{{ include "etcd.endpoints" $ }}"
+        {{- if .env }}
+        {{- toYaml .env | nindent 8 }}
+        {{- end }}
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 60000
+            scheme: HTTP
+          timeoutSeconds: 3
+          periodSeconds: 10
+          failureThreshold: 360
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 60000
+            scheme: HTTP
+          timeoutSeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - 'curl -s http://localhost:60000/health | jq -e ".status == \"healthy\""'
+          timeoutSeconds: 3
+          periodSeconds: 10
+          failureThreshold: 3
+        volumeMounts:
+        - name: config
+          mountPath: /workspace/examples/llm/configs
+        {{- if $.Values.model.pvc.enabled }}
+        - name: model
+          mountPath: /data/model
+          subPath: {{ $.Values.model.pvc.path }}
+        {{- else if $.Values.model.local.enabled }}
+        - name: model
+          mountPath: /data/model
+        {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "helm.fullname" $ }}-frontend-config
+      {{- if $.Values.model.pvc.enabled }}
+      - name: model
+        persistentVolumeClaim:
+          claimName: {{ $.Values.model.pvc.name }}
+      {{- else if $.Values.model.local.enabled }}
+      - name: model
+        hostPath:
+           path: {{ $.Values.model.local.path }}
+      {{- end }}
+{{- if .service.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.fullname" $ }}-frontend
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    component: frontend
+spec:
+  ports:
+  - name: http
+    port: {{ .service.port }}
+    protocol: TCP
+    targetPort: 60000
+  selector:
+    {{- include "helm.selectorLabels" $ | nindent 4 }}
+    component: frontend
+  type: {{ .service.type }}
+{{- end }}
+{{- end }}

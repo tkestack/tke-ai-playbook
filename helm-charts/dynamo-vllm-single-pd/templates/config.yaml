@@ -1,0 +1,85 @@
+{{- with .Values.server.frontend }}
+---
+apiVersion: v1
+data:
+  config.yaml: |
+    Common:
+      model: /data/model
+      block-size: 128
+
+    Frontend:
+      served_model_name: {{ $.Values.model.name }}
+      endpoint: dynamo.Processor.chat/completions
+      port: 60000
+
+    Processor:
+      router: {{ .args.router }}
+      common-configs: [model, block-size]
+
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" $ }}-frontend-config
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    component: frontend
+{{- end }}
+{{- with .Values.server.prefill }}
+---
+apiVersion: v1
+data:
+  config.yaml: |
+    Common:
+      model: /data/model
+      block-size: 128
+      max-model-len: {{ .args.maxModelLen }}
+      kv-transfer-config: '{"kv_connector":"DynamoNixlConnector"}'
+      tensor-parallel-size: {{ .args.tpSize }}
+      max-num-batched-tokens: {{ .args.maxModelLen }}
+
+    PrefillWorker:
+      enforce-eager: true
+      ServiceArgs:
+        workers: 1
+        resources:
+          gpu: '{{ .args.tpSize }}'
+      common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size, max-num-batched-tokens]
+
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" $ }}-prefill-config
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    component: prefill
+{{- end }}
+{{- with .Values.server.decode }}
+---
+apiVersion: v1
+data:
+  config.yaml: |
+    Common:
+      model: /data/model
+      block-size: 128
+      max-model-len: {{ .args.maxModelLen }}
+      kv-transfer-config: '{"kv_connector":"DynamoNixlConnector"}'
+      tensor-parallel-size: {{ .args.tpSize }}
+      max-num-batched-tokens: {{ .args.maxModelLen }}
+
+    VllmWorker:
+      remote-prefill: true
+      conditonal-disagg: false
+      max-num-seqs: {{ .args.maxBatchSize }}
+      {{- if index .extraArgs "compilation-config" }}
+      compilation-config: {{ index .extraArgs "compilation-config" }}
+      {{- end }}
+      ServiceArgs:
+        workers: 1
+        resources:
+          gpu: '{{ .args.tpSize }}'
+      common-configs: [model, block-size, max-model-len, kv-transfer-config, tensor-parallel-size, max-num-batched-tokens]
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.fullname" $ }}-decode-config
+  labels:
+    {{- include "helm.labels" $ | nindent 4 }}
+    component: decode
+{{- end }}

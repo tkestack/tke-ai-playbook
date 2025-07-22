@@ -1,0 +1,118 @@
+model:
+  name: "Qwen/Qwen3-32B"
+  pvc:
+    enabled: false
+    name: "ai-model"
+    path: "Qwen/Qwen3-32B"
+  local:
+    enabled: true
+    path: "/data0/Qwen/Qwen3-32B"
+
+server:
+  frontend:
+    replicas: 1
+    # image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.2-vllm"
+    image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.0-lws-pr1333"
+    imagePullPolicy: IfNotPresent
+    args:
+      router: round-robin
+    resources:
+      requests:
+        cpu: 10
+        memory: 20Gi
+      limits:
+        cpu: 10
+        memory: 20Gi
+    service:
+      enabled: true
+      type: ClusterIP
+      port: 60000
+
+  prefill:
+    replicas: 1
+    # image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.2-vllm"
+    image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.0-lws-pr1333"
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        nvidia.com/gpu: 8
+      limits:
+        nvidia.com/gpu: 8
+    args:
+      tpSize: 8
+      epEnabled: false
+      maxModelLen: 32768
+    extraArgs: {}
+    env:
+    - name: NCCL_IB_GID_INDEX
+      value: "3"
+    - name: NCCL_SOCKET_IFNAME
+      value: "eth0"
+    - name: GLOO_SOCKET_IFNAME
+      value: "eth0"
+    hostNetwork:
+      enabled: true
+
+  decode:
+    replicas: 1
+    # image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.2-vllm"
+    image: "ccr.ccs.tencentyun.com/tke-ai-playbook/dynamo:v0.3.0-lws-pr1333"
+    imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        nvidia.com/gpu: 8
+      limits:
+        nvidia.com/gpu: 8
+    args:
+      tpSize: 8
+      epEnabled: false
+      maxModelLen: 32768
+      maxBatchSize: 128
+    extraArgs:
+      compilation-config: '{"cudagraph_capture_sizes": [1, 2, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]}'
+    env:
+    - name: NCCL_IB_GID_INDEX
+      value: "3"
+    - name: NCCL_SOCKET_IFNAME
+      value: "eth0"
+    - name: GLOO_SOCKET_IFNAME
+      value: "eth0"
+    hostNetwork:
+      enabled: true
+
+
+nats:
+  enabled: true
+  config:
+    jetstream:
+      enabled: true
+      fileStore:
+        enabled: true
+        dir: /data
+        pvc:
+          enabled: true
+          size: 10Gi
+
+etcd:
+  enabled: true
+  replicaCount: 1
+  # Explicitly remove authentication
+  auth:
+    rbac:
+      create: false
+
+  readinessProbe:
+    enabled: false
+
+  livenessProbe:
+    enabled: false
+
+  persistence:
+    size: 20Gi
+    resources:
+    requests:
+      cpu: 10
+      memory: 20Gi
+    limits:
+      cpu: 10
+      memory: 20Gi
