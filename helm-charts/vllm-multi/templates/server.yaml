@@ -184,5 +184,24 @@ spec:
     {{- include "helm.selectorLabels" $ | nindent 4 }}
     role: leader
   type: {{ .service.type }}
+{{- if .service.serviceMonitor.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "helm.fullname" $ }}
+spec:
+  endpoints:
+  - interval: 15s
+    port: http
+    path: /metrics
+  namespaceSelector:
+    matchNames:
+    - {{ $.Release.Namespace }}
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" $ | nindent 6 }}
+      role: leader
+{{- end }}
 {{- end }}
 {{- end }}
