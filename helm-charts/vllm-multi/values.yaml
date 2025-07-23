@@ -42,3 +42,5 @@ server:
     enabled: true
     type: ClusterIP
     port: 60000
+    serviceMonitor:
+      enabled: true

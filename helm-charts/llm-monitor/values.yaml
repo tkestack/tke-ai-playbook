@@ -1,0 +1,38 @@
+kube-prometheus-stack:
+  enabeld: true
+  alertmanager:
+    enabeld: false
+  grafana:
+    enabled: true
+    adminUser: admin
+    adminPassword: prom-operator
+    service:
+      type: LoadBalancer
+    sidecar:
+      dashboards:
+        enabeld: true
+        label: grafana_dashboard
+        folderAnnotation: grafana_folder
+        provider:
+          foldersFromFilesStructure: true
+  prometheusOperator:
+    enabled: true
+    admissionWebhooks:
+      enabled: true
+      patch:
+        enabled: true
+        image: 
+          registry: ccr.ccs.tencentyun.com
+          repository: tke-ai-playbook/mirror
+          tag: kube-webhook-certgen-v1.6.0
+  kube-state-metrics:
+    image:
+      registry: ccr.ccs.tencentyun.com
+      repository: tke-ai-playbook/mirror
+      tag: kube-state-metrics-v2.16.0
+  prometheus:
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+
+dcgm-exporter:
+  enabled: true
