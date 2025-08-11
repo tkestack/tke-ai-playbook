@@ -106,7 +106,7 @@ def modelscope(
     if token:
         cookies = _api.get_cookies(access_token=token)
 
-    modelfiles_and_dir = _api.get_model_files(model_id=model_id)
+    modelfiles_and_dir = _api.get_model_files(model_id=model_id, recursive=True)
     modelfiles = [f["Path"] for f in modelfiles_and_dir if f['Type'] != 'tree']
     downloadfiles = filter_download_files(modelfiles, job_index, job_total)
     
