@@ -9,8 +9,8 @@ declare -a isl_list=(3000 1000 500)
 declare -a osl_list=(150 1000 1000)
 
 for i in "${!isl_list[@]}"; do
-    ISL=${isl_list[$i]}
-    OSL=${osl_list[$i]}
+    local isl=${isl_list[$i]}
+    local osl=${osl_list[$i]}
     echo "======================================================"
     echo "   Running benchmark with 'ISL:OSL=${ISL}:${OSL}'     "
     echo "   OpenAI Server 'http://${HOST}:${PORT}'             "
@@ -18,7 +18,13 @@ for i in "${!isl_list[@]}"; do
     echo "   Tokenizer '${TOKENIZER}'                           "
     echo "======================================================"
 
-    ISL=${ISL} OSL=${OSL} bash benchmark_serving_concurrency.sh
+    bash benchmark_serving_concurrency_list.sh \
+      --host ${HOST} \
+      --port ${PORT} \
+      --model ${MODEL} \
+      --tokenizer ${TOKENIZER} \
+      -isl ${isl} \
+      -osl ${osl}
 
     echo ""
     echo ""
