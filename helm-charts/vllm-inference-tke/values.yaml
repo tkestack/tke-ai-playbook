@@ -1,0 +1,40 @@
+model:
+  name: "Qwen/Qwen3-Coder-30B-A3B-Instruct"
+  pvc:
+    enabled: true
+    name: "ai-model"
+    path: "Qwen/Qwen3-Coder-30B-A3B-Instruct"
+  local:
+    enabled: false
+    path: "/data0/Qwen/Qwen3-32B"
+
+server:
+  replicas: 1
+  lwsGroupSize: 1
+  image: "ccr.ccs.tencentyun.com/tke-ai-playbook/vllm-openai:v0.10.1-20250801"
+  imagePullPolicy: IfNotPresent
+  apiKey: ""
+  resources:
+    requests:
+      nvidia.com/gpu: 1
+    limits:
+      nvidia.com/gpu: 1
+  args:
+    tpSize: 1
+    ppSize: 1
+    epEnabled: false
+    maxModelLen: 32768
+    maxBatchSize: 32
+  extraArgs:
+  - --disable-log-requests
+  - --cuda-graph-sizes 1 2 4 8 16 24 32
+  env:
+  - name: VLLM_WORKER_MULTIPROC_METHOD
+    value: "spawn"
+  service:
+    enabled: true
+    type: LoadBalancer
+    port: 60000
+
+labels: {}
+podAnnotations: {}
