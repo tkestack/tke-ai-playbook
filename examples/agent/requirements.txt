@@ -1,0 +1,7 @@
+langchain-openai
+langgraph
+langchain-mcp-adapters
+langfuse
+mcp
+deepeval
+pytest
