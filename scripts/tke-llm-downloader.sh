@@ -238,7 +238,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: downloader
-        image: tkeai.tencentcloudcr.com/tke-ai-playbook/llm-downloader:nightly
+        image: tkeai.tencentcloudcr.com/tke-ai-playbook/llm-downloader:latest
         env:
         - name: JOB_COMPLETION_TOTAL
           value: "${JOB_COMPLETION_TOTAL}"
