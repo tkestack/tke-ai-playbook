@@ -10,11 +10,10 @@ registry:
     type: LoadBalancer
     port: 8080
   
-  # 环境变量配置
+# 环境变量配置
   env:
     enableAnonymousAuth: False
     enableRegistryValidation: true
-    seedFrom: "https://registry.modelcontextprotocol.io/v0/servers?search=domdomegg"
     
     # GitHub OAuth 配置
     github:
@@ -27,12 +26,7 @@ registry:
     
     # OIDC 配置
     oidc:
-      enabled: true
-      issuer: "https://accounts.google.com"
-      clientId: "32555940559.apps.googleusercontent.com"
-      extraClaims: '[{"hd":"modelcontextprotocol.io"}]'
-      editPermissions: "*"
-      publishPermissions: "*"
+      enabled: False
 
 # PostgreSQL 配置
 postgresql:
