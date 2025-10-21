@@ -1,0 +1,55 @@
+# Registry 配置
+registry:
+  image:
+    repository: ccr.ccs.tencentyun.com/archerlliu/mcp-registry
+    tag: "1.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  
+  service:
+    type: LoadBalancer
+    port: 8080
+  
+  # 环境变量配置
+  env:
+    enableAnonymousAuth: False
+    enableRegistryValidation: true
+    seedFrom: "https://registry.modelcontextprotocol.io/v0/servers?search=domdomegg"
+    
+    # GitHub OAuth 配置
+    github:
+      clientId: "Iv23licy3GSiM9Km5jtd"
+      clientSecret: "0e8db54879b02c29adef51795586f3c510a9341d"
+    
+    # JWT 配置
+    jwt:
+      privateKey: "8103179d8ef955f6d3de6d6217224a909ec4060529dfeb1d4ca5a994537658cd"
+    
+    # OIDC 配置
+    oidc:
+      enabled: true
+      issuer: "https://accounts.google.com"
+      clientId: "32555940559.apps.googleusercontent.com"
+      extraClaims: '[{"hd":"modelcontextprotocol.io"}]'
+      editPermissions: "*"
+      publishPermissions: "*"
+
+# PostgreSQL 配置
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 16-alpine
+  
+  auth:
+    database: mcp-registry
+    username: mcpregistry
+    password: mcpregistry
+  
+  primary:
+    service:
+      type: ClusterIP
+      port: 5432
+    
+    persistence:
+      enabled: false

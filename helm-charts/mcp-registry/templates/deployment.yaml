@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mcp-registry.fullname" . }}
+  labels:
+    app: {{ include "mcp-registry.name" . }}
+spec:
+  type: {{ .Values.registry.service.type }}
+  ports:
+    - port: {{ .Values.registry.service.port }}
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ include "mcp-registry.name" . }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp-registry.fullname" . }}
+  labels:
+    app: {{ include "mcp-registry.name" . }}
+spec:
+  replicas: {{ .Values.registry.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "mcp-registry.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "mcp-registry.name" . }}
+    spec:
+      containers:
+      - name: registry
+        image: "{{ .Values.registry.image.repository }}:{{ .Values.registry.image.tag }}"
+        imagePullPolicy: {{ .Values.registry.image.pullPolicy }}
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: MCP_REGISTRY_DATABASE_URL
+          value: "postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ include "mcp-registry.fullname" . }}-postgres:{{ .Values.postgresql.primary.service.port }}/{{ .Values.postgresql.auth.database }}"
+        - name: MCP_REGISTRY_ENVIRONMENT
+          value: "{{ .Values.registry.env.environment }}"
+        - name: MCP_REGISTRY_GITHUB_CLIENT_ID
+          value: "{{ .Values.registry.env.github.clientId }}"
+        - name: MCP_REGISTRY_GITHUB_CLIENT_SECRET
+          value: "{{ .Values.registry.env.github.clientSecret }}"
+        - name: MCP_REGISTRY_JWT_PRIVATE_KEY
+          value: "{{ .Values.registry.env.jwt.privateKey }}"
+        - name: MCP_REGISTRY_ENABLE_ANONYMOUS_AUTH
+          value: {{ .Values.registry.env.enableAnonymousAuth | quote }}
+        - name: MCP_REGISTRY_SEED_FROM
+          value: "{{ .Values.registry.env.seedFrom }}"
+        - name: MCP_REGISTRY_OIDC_ENABLED
+          value: {{ .Values.registry.env.oidc.enabled | quote }}
+        - name: MCP_REGISTRY_OIDC_ISSUER
+          value: "{{ .Values.registry.env.oidc.issuer }}"
+        - name: MCP_REGISTRY_OIDC_CLIENT_ID
+          value: "{{ .Values.registry.env.oidc.clientId }}"
+        - name: MCP_REGISTRY_OIDC_EXTRA_CLAIMS
+          value: {{ .Values.registry.env.oidc.extraClaims | quote }}
+        - name: MCP_REGISTRY_OIDC_EDIT_PERMISSIONS
+          value: "{{ .Values.registry.env.oidc.editPermissions }}"
+        - name: MCP_REGISTRY_OIDC_PUBLISH_PERMISSIONS
+          value: "{{ .Values.registry.env.oidc.publishPermissions }}"
+        - name: MCP_REGISTRY_ENABLE_REGISTRY_VALIDATION
+          value: {{ .Values.registry.env.enableRegistryValidation | quote }}
