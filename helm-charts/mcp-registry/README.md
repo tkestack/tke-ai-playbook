@@ -8,7 +8,7 @@
 
 - Kubernetes 1.19+
 - Helm 3.0+
-
+- 获取Github OAuth和JWT配置：https://github.com/modelcontextprotocol/registry/blob/main/.env.example
 ### 安装 Chart
 
 ```bash

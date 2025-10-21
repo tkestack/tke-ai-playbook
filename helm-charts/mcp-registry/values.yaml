@@ -17,12 +17,12 @@ registry:
     
     # GitHub OAuth 配置
     github:
-      clientId: "Iv23licy3GSiM9Km5jtd"
-      clientSecret: "0e8db54879b02c29adef51795586f3c510a9341d"
+      clientId: ""
+      clientSecret: ""
     
     # JWT 配置
     jwt:
-      privateKey: "8103179d8ef955f6d3de6d6217224a909ec4060529dfeb1d4ca5a994537658cd"
+      privateKey: ""
     
     # OIDC 配置
     oidc:
