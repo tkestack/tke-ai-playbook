@@ -1,0 +1,49 @@
+# Registry 配置
+registry:
+  image:
+    repository: ccr.ccs.tencentyun.com/archerlliu/mcp-registry
+    tag: "1.0"
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  
+  service:
+    type: LoadBalancer
+    port: 8080
+  
+# 环境变量配置
+  env:
+    enableAnonymousAuth: False
+    enableRegistryValidation: true
+    
+    # GitHub OAuth 配置
+    github:
+      clientId: ""
+      clientSecret: ""
+    
+    # JWT 配置
+    jwt:
+      privateKey: ""
+    
+    # OIDC 配置
+    oidc:
+      enabled: False
+
+# PostgreSQL 配置
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 16-alpine
+  
+  auth:
+    database: mcp-registry
+    username: mcpregistry
+    password: mcpregistry
+  
+  primary:
+    service:
+      type: ClusterIP
+      port: 5432
+    
+    persistence:
+      enabled: false
