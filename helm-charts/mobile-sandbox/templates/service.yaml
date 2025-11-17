@@ -1,0 +1,20 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "mobile-sandbox.fullname" . }}
+  labels:
+    {{- include "mobile-sandbox.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.targetPort }}
+      protocol: TCP
+      name: adb
+  selector:
+    {{- include "mobile-sandbox.selectorLabels" . | nindent 4 }}
+    {{- with .Values.redroid.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}
