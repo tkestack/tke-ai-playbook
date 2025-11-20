@@ -150,8 +150,7 @@ redroid:
 │  ┌─────────────────────────────────┐   │
 │  │ Pod                             │   │
 │  │ ├─ redroid (Android 11)         │   │
-│  │ ├─ route-setup (网络)           │   │
-│  │ └─ logcat-sidecar (日志)        │   │
+│  │ └─ route-setup (网络)           │   │
 │  └─────────────────────────────────┘   │
 └─────────────────────────────────────────┘
 ```
@@ -160,7 +159,6 @@ redroid:
 
 - **redroid**：Android 11 系统，支持 Houdini ARM 转译
 - **route-setup**：维护 TKE ENI 网络路由
-- **logcat-sidecar**：通过 ADB 收集 Android 日志
 - **module-loader**：在每个节点上加载内核模块
 
 ## 故障排查

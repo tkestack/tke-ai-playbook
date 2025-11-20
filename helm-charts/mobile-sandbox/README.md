@@ -150,8 +150,7 @@ Each pod is auto-configured with:
 │  ┌─────────────────────────────────┐   │
 │  │ Pod                             │   │
 │  │ ├─ redroid (Android 11)         │   │
-│  │ ├─ route-setup (Network)        │   │
-│  │ └─ logcat-sidecar (Logs)        │   │
+│  │ └─ route-setup (Network)        │   │
 │  └─────────────────────────────────┘   │
 └─────────────────────────────────────────┘
 ```
@@ -160,7 +159,6 @@ Each pod is auto-configured with:
 
 - **redroid**: Android 11 with Houdini ARM translation
 - **route-setup**: Maintains routing for TKE ENI
-- **logcat-sidecar**: Collects Android logs via ADB
 - **module-loader**: Loads kernel modules on each node
 
 ## Troubleshooting
