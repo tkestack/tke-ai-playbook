@@ -1,0 +1,203 @@
+# Default values for mobile-sandbox
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Override chart name
+nameOverride: ""
+fullnameOverride: ""
+
+# Redroid StatefulSet Configuration
+redroid:
+  # Enable/disable the redroid StatefulSet
+  enabled: true
+  
+  # Number of replicas
+  replicas: 1
+  
+  # Pod Management Policy
+  podManagementPolicy: OrderedReady
+  
+  # PVC Retention Policy
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  
+  # Labels for the StatefulSet
+  labels:
+    k8s-app: redroid
+    qcloud-app: redroid
+  
+  # Pod annotations
+  podAnnotations:
+    tke.cloud.tencent.com/eip-attributes: '{"Bandwidth":"100","ISP":"BGP"}'
+    tke.cloud.tencent.com/eip-claim-delete-policy: Never
+    tke.cloud.tencent.com/networks: tke-route-eni
+  
+  # Pod labels
+  podLabels:
+    k8s-app: redroid
+    qcloud-app: redroid
+
+  # Node affinity configuration
+  nodeAffinity:
+    enabled: true
+    nodepoolIds:
+      - np-xxxxxxxx
+
+  # Redroid container configuration
+  container:
+    image:
+      repository: erstt/redroid
+      tag: 11.0.0_houdini_ChromeOS
+      pullPolicy: IfNotPresent
+    
+    # Android boot arguments
+    args:
+      - ro.enable.native.bridge.exec64=1
+      - ro.dalvik.vm.native.bridge=libhoudini.so
+      - androidboot.redroid_gpu_mode=guest
+      - androidboot.redroid_width=720
+      - androidboot.redroid_height=1280
+      - androidboot.redroid_dpi=320
+      - androidboot.redroid_fps=15
+      - androidboot.use_memfd=true
+      - androidboot.redroid_net_ndns=2
+      - androidboot.redroid_net_dns1=8.8.8.8
+      - androidboot.redroid_net_dns2=8.8.4.4
+    
+    # Environment variables
+    env:
+      - name: ANDROID_SKIP_BORINGSSL_SELF_TEST
+        value: "1"
+    
+    # Container ports
+    ports:
+      - containerPort: 5555
+        name: adb
+        protocol: TCP
+    
+    # Resource requests and limits
+    resources:
+      requests:
+        cpu: 6500m
+        memory: 10Gi
+        tke.cloud.tencent.com/eip: "1"
+        tke.cloud.tencent.com/eni-ip: "1"
+      limits:
+        cpu: 6500m
+        memory: 10Gi
+        tke.cloud.tencent.com/eip: "1"
+        tke.cloud.tencent.com/eni-ip: "1"
+  
+  # Route setup sidecar configuration
+  routeSetup:
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 50m
+        memory: 1Gi
+  
+  # Logcat sidecar configuration
+  logcatSidecar:
+    image:
+      repository: sorccu/adb
+      tag: latest
+      pullPolicy: IfNotPresent
+    
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+# Module Loader DaemonSet Configuration
+moduleLoader:
+  # Enable/disable the module loader DaemonSet
+  enabled: true
+  
+  # Labels for the DaemonSet
+  labels:
+    app: redroid-ubuntu-module-loader
+  
+  # Node affinity configuration
+  nodeAffinity:
+    enabled: true
+    nodepoolIds:
+      - np-xxxxxxxx
+      - np-yyyyyyyy
+
+  # Tolerations for scheduling on all nodes
+  tolerations:
+    - effect: NoSchedule
+      operator: Exists
+    - effect: NoExecute
+      operator: Exists
+  
+  # Init container configuration (installs kernel modules)
+  initContainer:
+    image:
+      repository: ubuntu
+      tag: "22.04"
+      pullPolicy: IfNotPresent
+  
+  # Main container configuration (loads kernel modules)
+  container:
+    image:
+      repository: alpine
+      tag: latest
+      pullPolicy: IfNotPresent
+    
+    # APK mirror for faster package installation
+    apkMirror: mirrors.cloud.tencent.com
+    
+    resources:
+      requests:
+        cpu: 50m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Service configuration
+service:
+  enabled: false
+  type: ClusterIP
+  port: 5555
+  targetPort: adb
+
+# DNS Policy
+dnsPolicy: ClusterFirst
+
+# Restart Policy
+restartPolicy: Always
+
+# Termination Grace Period
+terminationGracePeriodSeconds: 30
+
+# Security Context
+securityContext: {}
+
+# Update Strategy for StatefulSet
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    partition: 0
+
+# Update Strategy for DaemonSet
+daemonSetUpdateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 0

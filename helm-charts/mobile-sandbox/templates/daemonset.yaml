@@ -1,0 +1,234 @@
+{{- if .Values.moduleLoader.enabled }}
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "mobile-sandbox.fullname" . }}-module-loader
+  labels:
+    {{- include "mobile-sandbox.labels" . | nindent 4 }}
+    {{- with .Values.moduleLoader.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      {{- with .Values.moduleLoader.labels }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+  {{- with .Values.daemonSetUpdateStrategy }}
+  updateStrategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- with .Values.moduleLoader.labels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.moduleLoader.nodeAffinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            {{- range .Values.moduleLoader.nodeAffinity.nodepoolIds }}
+            - matchExpressions:
+              - key: tke.cloud.tencent.com/nodepool-id
+                operator: In
+                values:
+                - {{ . }}
+            {{- end }}
+      {{- end }}
+      {{- with .Values.moduleLoader.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      hostNetwork: true
+      hostPID: true
+      dnsPolicy: {{ .Values.dnsPolicy }}
+      restartPolicy: {{ .Values.restartPolicy }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      
+      # Init container - installs kernel modules on host
+      initContainers:
+      - name: install-modules
+        image: "{{ .Values.moduleLoader.initContainer.image.repository }}:{{ .Values.moduleLoader.initContainer.image.tag }}"
+        imagePullPolicy: {{ .Values.moduleLoader.initContainer.image.pullPolicy }}
+        command:
+        - /bin/bash
+        - -c
+        - |
+          #!/bin/bash
+          set -e
+
+          echo "Checking if kernel modules need to be installed..."
+
+          # Use nsenter to run commands in host namespace
+          KERNEL_VERSION=$(nsenter --mount=/proc/1/ns/mnt -- uname -r)
+          echo "Host kernel version: $KERNEL_VERSION"
+
+          # Check if modules already exist
+          if nsenter --mount=/proc/1/ns/mnt -- test -f /lib/modules/$KERNEL_VERSION/kernel/drivers/android/binder_linux.ko; then
+            echo "✓ binder_linux module already exists"
+          else
+            echo "Installing linux-modules-extra-$KERNEL_VERSION..."
+            nsenter --mount=/proc/1/ns/mnt -- apt-get update
+            nsenter --mount=/proc/1/ns/mnt -- apt-get install -y linux-modules-extra-$KERNEL_VERSION || echo "Failed to install, continuing..."
+          fi
+
+          # Ensure /etc/modules-load.d directory exists on host
+          nsenter --mount=/proc/1/ns/mnt -- mkdir -p /etc/modules-load.d
+
+          # Configure modules to load at boot (IPv4 and IPv6)
+          echo "Configuring modules to auto-load at boot..."
+          nsenter --mount=/proc/1/ns/mnt -- sh -c 'echo "iptable_filter" > /etc/modules-load.d/iptables.conf'
+          nsenter --mount=/proc/1/ns/mnt -- sh -c 'echo "iptable_mangle" >> /etc/modules-load.d/iptables.conf'
+          nsenter --mount=/proc/1/ns/mnt -- sh -c 'echo "iptable_raw" >> /etc/modules-load.d/iptables.conf'
+          nsenter --mount=/proc/1/ns/mnt -- sh -c 'echo "ip6table_filter" >> /etc/modules-load.d/iptables.conf'
+          nsenter --mount=/proc/1/ns/mnt -- sh -c 'echo "ip6table_mangle" >> /etc/modules-load.d/iptables.conf'
+          nsenter --mount=/proc/1/ns/mnt -- sh -c 'echo "ip6table_raw" >> /etc/modules-load.d/iptables.conf'
+          echo "✓ Configured IPv4 and IPv6 iptables modules for auto-load"
+
+          echo "Module installation check complete"
+        securityContext:
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - name: host-root
+          mountPath: /host
+      
+      # Main container - loads kernel modules
+      containers:
+      - name: module-loader
+        image: "{{ .Values.moduleLoader.container.image.repository }}:{{ .Values.moduleLoader.container.image.tag }}"
+        imagePullPolicy: {{ .Values.moduleLoader.container.image.pullPolicy }}
+        command:
+        - /bin/sh
+        - -c
+        - |
+          #!/bin/sh
+          set -e
+
+          echo "Starting kernel module loader..."
+
+          # Use Tencent Cloud mirror
+          sed -i 's/dl-cdn.alpinelinux.org/{{ .Values.moduleLoader.container.apkMirror }}/g' /etc/apk/repositories
+
+          # Install kmod package for modprobe and lsmod
+          apk add --no-cache kmod
+
+          # Load Android kernel modules
+          echo "=== Loading Android kernel modules ==="
+
+          # Check if binder_linux module is already loaded
+          if lsmod | grep -q "^binder_linux"; then
+            echo "✓ binder_linux module is already loaded"
+          else
+            echo "Loading binder_linux module..."
+            modprobe binder_linux devices="binder,hwbinder,vndbinder" || echo "✗ Failed to load binder_linux"
+          fi
+
+          # Check if ashmem_linux module is already loaded
+          if lsmod | grep -q "^ashmem_linux"; then
+            echo "✓ ashmem_linux module is already loaded"
+          else
+            echo "Loading ashmem_linux module..."
+            modprobe ashmem_linux || echo "✗ Failed to load ashmem_linux"
+          fi
+
+          # Load iptables kernel modules (Fix for redroid networking issues)
+          echo "=== Loading IPv4 iptables kernel modules ==="
+
+          if lsmod | grep -q "^iptable_filter"; then
+            echo "✓ iptable_filter module is already loaded"
+          else
+            echo "Loading iptable_filter module..."
+            modprobe iptable_filter || echo "✗ Failed to load iptable_filter"
+          fi
+
+          if lsmod | grep -q "^iptable_mangle"; then
+            echo "✓ iptable_mangle module is already loaded"
+          else
+            echo "Loading iptable_mangle module..."
+            modprobe iptable_mangle || echo "✗ Failed to load iptable_mangle"
+          fi
+
+          if lsmod | grep -q "^iptable_raw"; then
+            echo "✓ iptable_raw module is already loaded"
+          else
+            echo "Loading iptable_raw module..."
+            modprobe iptable_raw || echo "✗ Failed to load iptable_raw"
+          fi
+
+          # Load IPv6 iptables kernel modules
+          echo "=== Loading IPv6 iptables kernel modules ==="
+
+          if lsmod | grep -q "^ip6table_filter"; then
+            echo "✓ ip6table_filter module is already loaded"
+          else
+            echo "Loading ip6table_filter module..."
+            modprobe ip6table_filter || echo "✗ Failed to load ip6table_filter"
+          fi
+
+          if lsmod | grep -q "^ip6table_mangle"; then
+            echo "✓ ip6table_mangle module is already loaded"
+          else
+            echo "Loading ip6table_mangle module..."
+            modprobe ip6table_mangle || echo "✗ Failed to load ip6table_mangle"
+          fi
+
+          if lsmod | grep -q "^ip6table_raw"; then
+            echo "✓ ip6table_raw module is already loaded"
+          else
+            echo "Loading ip6table_raw module..."
+            modprobe ip6table_raw || echo "✗ Failed to load ip6table_raw"
+          fi
+
+          echo ""
+          echo "=== Module loading summary ==="
+          echo "Android modules:"
+          lsmod | grep -E "binder|ashmem" || echo "No binder/ashmem modules found"
+          echo ""
+          echo "IPv4 iptables modules:"
+          lsmod | grep -E "iptable_filter|iptable_mangle|iptable_raw" || echo "No IPv4 iptables modules found"
+          echo ""
+          echo "IPv6 iptables modules:"
+          lsmod | grep -E "ip6table_filter|ip6table_mangle|ip6table_raw" || echo "No IPv6 iptables modules found"
+
+          # Keep the container running
+          echo ""
+          echo "Module loader ready. Entering sleep mode..."
+          while true; do sleep 3600; done
+        {{- with .Values.moduleLoader.container.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        securityContext:
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - name: lib-modules
+          mountPath: /lib/modules
+          readOnly: true
+        - name: sys
+          mountPath: /sys
+      
+      # Volumes
+      volumes:
+      - name: lib-modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
+      - name: sys
+        hostPath:
+          path: /sys
+          type: Directory
+      - name: host-root
+        hostPath:
+          path: /
+          type: Directory
+{{- end }}

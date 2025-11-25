@@ -1,0 +1,162 @@
+{{- if .Values.redroid.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "mobile-sandbox.fullname" . }}-redroid
+  labels:
+    {{- include "mobile-sandbox.labels" . | nindent 4 }}
+    {{- with .Values.redroid.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  serviceName: ""
+  replicas: {{ .Values.redroid.replicas }}
+  podManagementPolicy: {{ .Values.redroid.podManagementPolicy }}
+  revisionHistoryLimit: 10
+  {{- with .Values.redroid.persistentVolumeClaimRetentionPolicy }}
+  persistentVolumeClaimRetentionPolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "mobile-sandbox.selectorLabels" . | nindent 6 }}
+      {{- with .Values.redroid.labels }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
+  {{- with .Values.updateStrategy }}
+  updateStrategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.redroid.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "mobile-sandbox.labels" . | nindent 8 }}
+        {{- with .Values.redroid.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.redroid.nodeAffinity.enabled }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            {{- range .Values.redroid.nodeAffinity.nodepoolIds }}
+            - matchExpressions:
+              - key: tke.cloud.tencent.com/nodepool-id
+                operator: In
+                values:
+                - {{ . }}
+            {{- end }}
+      {{- end }}
+      dnsPolicy: {{ .Values.dnsPolicy }}
+      restartPolicy: {{ .Values.restartPolicy }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      containers:
+      # Main redroid container
+      - name: redroid
+        image: "{{ .Values.redroid.container.image.repository }}:{{ .Values.redroid.container.image.tag }}"
+        imagePullPolicy: {{ .Values.redroid.container.image.pullPolicy }}
+        {{- with .Values.redroid.container.args }}
+        args:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.redroid.container.env }}
+        env:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.redroid.container.ports }}
+        ports:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.redroid.container.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        securityContext:
+          privileged: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      
+      # Route setup sidecar
+      - name: route-setup
+        image: "{{ .Values.redroid.routeSetup.image.repository }}:{{ .Values.redroid.routeSetup.image.tag }}"
+        imagePullPolicy: {{ .Values.redroid.routeSetup.image.pullPolicy }}
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+          echo "=== Network Route Guardian ==="
+
+          for i in $(seq 1 60); do
+            POD_IP=$(ip -4 addr show eth0 2>/dev/null | grep inet | awk '{print $2}' | cut -d/ -f1)
+            [ -n "$POD_IP" ] && break
+            sleep 1
+          done
+
+          echo "Pod IP: $POD_IP"
+
+          for i in $(seq 1 30); do
+            GW_MAC=$(ip neigh show | grep -E "REACHABLE|STALE|DELAY|PERMANENT" | grep -oE "([0-9a-f]{2}:){5}[0-9a-f]{2}" | head -1)
+            if [ -z "$GW_MAC" ]; then
+              ip route add 169.254.1.1 dev eth0 scope link 2>/dev/null || true
+              ping -c 1 -W 1 169.254.1.1 >/dev/null 2>&1 || true
+              sleep 1
+            else
+              break
+            fi
+          done
+
+          configure_routes() {
+            ip route replace 169.254.1.1 dev eth0 scope link 2>/dev/null || true
+            [ -n "$1" ] && arp -s 169.254.1.1 $1 2>/dev/null || true
+            ip route replace default via 169.254.1.1 dev eth0 src $POD_IP 2>/dev/null || true
+            
+            for tid in 97 98 99; do
+              ip route replace 169.254.1.1 dev eth0 scope link table $tid 2>/dev/null || true
+              ip route replace default via 169.254.1.1 dev eth0 src $POD_IP table $tid 2>/dev/null || true
+            done
+            
+            ip rule show | grep -q "32000.*unreachable" && ip rule del pref 32000 2>/dev/null || true
+          }
+
+          configure_routes "$GW_MAC"
+          ping -c 2 8.8.8.8 >/dev/null 2>&1 && echo "✓ Network OK"
+
+          CHECK=0
+          FIX=0
+
+          while true; do
+            [ $CHECK -lt 60 ] && INT=2 || INT=10
+            
+            NEED=0
+            ! ip route show table 97 | grep -q "^default" && NEED=1
+            ip rule show | grep -q "32000.*unreachable" && NEED=1
+            
+            [ $NEED -eq 1 ] && { FIX=$((FIX+1)); configure_routes "$GW_MAC"; }
+            
+            CHECK=$((CHECK+1))
+            sleep $INT
+          done
+        {{- with .Values.redroid.routeSetup.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        securityContext:
+          privileged: true
+          capabilities:
+            add:
+            - NET_ADMIN
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+{{- end }}

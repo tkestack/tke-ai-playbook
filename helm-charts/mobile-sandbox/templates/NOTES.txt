@@ -1,0 +1,43 @@
+mobile-sandbox has been deployed successfully!
+
+{{- if .Values.moduleLoader.enabled }}
+1. Module Loader DaemonSet:
+   - Loads Android kernel modules (binder_linux, ashmem_linux)
+   - Loads iptables modules (IPv4 and IPv6)
+   - Running on nodes: {{ if .Values.moduleLoader.nodeAffinity.nodepoolIds }}{{ .Values.moduleLoader.nodeAffinity.nodepoolIds | join ", " }}{{ end }}
+
+   Check module loader status:
+   kubectl get daemonset {{ include "mobile-sandbox.fullname" . }}-module-loader
+   kubectl logs -l app=redroid-ubuntu-module-loader --tail=50
+{{- end }}
+
+{{- if .Values.redroid.enabled }}
+2. Redroid StatefulSet:
+   - Running {{ .Values.redroid.replicas }} Android container(s)
+   - Image: {{ .Values.redroid.container.image.repository }}:{{ .Values.redroid.container.image.tag }}
+   - ADB port: 5555
+
+   Check redroid status:
+   kubectl get statefulset {{ include "mobile-sandbox.fullname" . }}-redroid
+   kubectl get pods -l k8s-app=redroid
+
+   View logs:
+   kubectl logs {{ include "mobile-sandbox.fullname" . }}-redroid-0 -c redroid
+   kubectl logs {{ include "mobile-sandbox.fullname" . }}-redroid-0 -c logcat-sidecar
+   kubectl logs {{ include "mobile-sandbox.fullname" . }}-redroid-0 -c route-setup
+
+   Connect to ADB (from pod with direct network access):
+   adb connect <POD_IP>:5555
+   
+   Or port-forward:
+   kubectl port-forward {{ include "mobile-sandbox.fullname" . }}-redroid-0 5555:5555
+   adb connect localhost:5555
+{{- end }}
+
+{{- if .Values.service.enabled }}
+3. Service:
+   export SERVICE_IP=$(kubectl get svc {{ include "mobile-sandbox.fullname" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+   adb connect $SERVICE_IP:{{ .Values.service.port }}
+{{- end }}
+
+For more information, visit: https://github.com/remote-android/redroid-doc
